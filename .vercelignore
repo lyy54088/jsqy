@@ -1,0 +1,6 @@
+node_modules
+build
+.git
+.trae
+.log
+backend_service

@@ -1,0 +1,172 @@
+version: '3.8'
+
+services:
+  # 后端应用服务
+  app:
+    build:
+      context: .
+      target: production
+    container_name: fitness-coach-backend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - MONGODB_URI=mongodb://mongodb:27017/fitness_coach
+      - MONGODB_DB_NAME=fitness_coach
+      - JWT_SECRET=${JWT_SECRET:-your_super_secret_jwt_key_here}
+      - JWT_EXPIRES_IN=7d
+      - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY}
+      - DEEPSEEK_API_URL=https://api.deepseek.com
+      - CORS_ORIGIN=http://localhost:5173
+      - UPLOAD_MAX_SIZE=10485760
+      - RATE_LIMIT_WINDOW_MS=900000
+      - RATE_LIMIT_MAX_REQUESTS=100
+      - LOG_LEVEL=info
+    volumes:
+      - ./uploads:/app/uploads
+      - ./logs:/app/logs
+    depends_on:
+      - mongodb
+      - redis
+    networks:
+      - fitness-network
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # MongoDB 数据库
+  mongodb:
+    image: mongo:7.0
+    container_name: fitness-coach-mongodb
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=${MONGO_ROOT_USERNAME:-admin}
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_ROOT_PASSWORD:-password}
+      - MONGO_INITDB_DATABASE=fitness_coach
+    volumes:
+      - mongodb_data:/data/db
+      - ./scripts/mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
+    networks:
+      - fitness-network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Redis 缓存 (可选)
+  redis:
+    image: redis:7.2-alpine
+    container_name: fitness-coach-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-redis_password}
+    volumes:
+      - redis_data:/data
+    networks:
+      - fitness-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Nginx 反向代理 (可选)
+  nginx:
+    image: nginx:alpine
+    container_name: fitness-coach-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - app
+    networks:
+      - fitness-network
+    profiles:
+      - production
+
+# 数据卷
+volumes:
+  mongodb_data:
+    driver: local
+  redis_data:
+    driver: local
+
+# 网络
+networks:
+  fitness-network:
+    driver: bridge
+
+# 开发环境配置
+---
+version: '3.8'
+
+services:
+  # 开发环境应用服务
+  app-dev:
+    build:
+      context: .
+      target: development
+    container_name: fitness-coach-backend-dev
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - PORT=3000
+      - MONGODB_URI=mongodb://mongodb-dev:27017/fitness_coach_dev
+      - MONGODB_DB_NAME=fitness_coach_dev
+      - JWT_SECRET=dev_jwt_secret_key
+      - JWT_EXPIRES_IN=1d
+      - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY}
+      - DEEPSEEK_API_URL=https://api.deepseek.com
+      - CORS_ORIGIN=http://localhost:5173
+      - LOG_LEVEL=debug
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - ./uploads:/app/uploads
+      - ./logs:/app/logs
+    depends_on:
+      - mongodb-dev
+    networks:
+      - fitness-dev-network
+    profiles:
+      - development
+
+  # 开发环境 MongoDB
+  mongodb-dev:
+    image: mongo:7.0
+    container_name: fitness-coach-mongodb-dev
+    restart: unless-stopped
+    ports:
+      - "27018:27017"
+    environment:
+      - MONGO_INITDB_DATABASE=fitness_coach_dev
+    volumes:
+      - mongodb_dev_data:/data/db
+    networks:
+      - fitness-dev-network
+    profiles:
+      - development
+
+volumes:
+  mongodb_dev_data:
+    driver: local
+
+networks:
+  fitness-dev-network:
+    driver: bridge
