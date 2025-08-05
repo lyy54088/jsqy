@@ -1,9 +1,10 @@
 import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Camera, MapPin, Clock, CheckCircle, AlertCircle, Loader, Brain, Utensils } from 'lucide-react';
+import { ArrowLeft, Camera, MapPin, Clock, CheckCircle, AlertCircle, Brain, Utensils } from 'lucide-react';
 import { useAppStore } from '@/store';
 import type { CheckIn as CheckInType } from '@/store';
 import { analyzeFoodImage, imageToBase64, type FoodAnalysisResult } from '@/lib/food-analysis-api';
+import { getSafeImageUrl } from '@/lib/image-proxy';
 
 const CheckIn: React.FC = () => {
   const navigate = useNavigate();
@@ -11,7 +12,7 @@ const CheckIn: React.FC = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedType, setSelectedType] = useState<CheckInType['type']>('breakfast');
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
-  const [capturedFile, setCapturedFile] = useState<File | null>(null);
+  const [capturedFile, setCapturedFile] = useState<File | null>(null); // eslint-disable-line @typescript-eslint/no-unused-vars
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<FoodAnalysisResult | null>(null);
   const [location, setLocation] = useState<{ latitude: number; longitude: number; address: string } | null>(null);
@@ -114,6 +115,20 @@ const CheckIn: React.FC = () => {
       description: analysisResult.description
     };
 
+    // 根据AI分析结果决定打卡状态
+    let status: 'approved' | 'pending' | 'rejected';
+    
+    if (analysisResult.recognized && analysisResult.confidence >= 0.7) {
+      // AI识别成功且置信度高于70%，自动批准
+      status = 'approved';
+    } else if (analysisResult.recognized && analysisResult.confidence >= 0.5) {
+      // AI识别成功但置信度较低，需要人工审核
+      status = 'pending';
+    } else {
+      // AI识别失败或置信度过低，拒绝
+      status = 'rejected';
+    }
+
     const checkIn: Omit<CheckInType, 'id'> = {
       userId: user.id,
       contractId: currentContract.id,
@@ -122,7 +137,7 @@ const CheckIn: React.FC = () => {
       location,
       aiResult,
       timestamp: new Date(),
-      status: analysisResult.recognized ? 'approved' : 'pending'
+      status
     };
 
     addCheckIn(checkIn);
@@ -222,7 +237,7 @@ const CheckIn: React.FC = () => {
             <div className="space-y-4">
               <div className="relative">
                 <img 
-                  src={capturedImage} 
+                  src={getSafeImageUrl(capturedImage || '', '打卡照片')} 
                   alt="打卡照片" 
                   className="w-full h-48 object-cover rounded-lg"
                 />

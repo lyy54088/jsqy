@@ -11,6 +11,10 @@ import History from "@/pages/History";
 import Profile from "@/pages/Profile";
 import DatabaseTest from "@/pages/DatabaseTest";
 import FoodAnalysis from "@/pages/FoodAnalysis";
+import Community from "@/pages/Community";
+import DeepSeekDebug from "@/pages/DeepSeekDebug";
+import QuickDeepSeekConfig from "@/pages/QuickDeepSeekConfig";
+import DeepSeekTest from "@/pages/DeepSeekTest";
 
 // 路由保护组件
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -48,7 +52,7 @@ export default function App() {
           </ProtectedRoute>
         } />
         
-        <Route path="/ai-coach/setup" element={
+        <Route path="/setup" element={
           <ProtectedRoute>
             <AICoachSetup />
           </ProtectedRoute>
@@ -95,6 +99,30 @@ export default function App() {
             <FoodAnalysis />
           </ProtectedRoute>
         } />
+        
+        <Route path="/community" element={
+          <ProtectedRoute>
+            <Community />
+          </ProtectedRoute>
+        } />
+        
+        <Route path="/deepseek-debug" element={
+          <ProtectedRoute>
+            <DeepSeekDebug />
+          </ProtectedRoute>
+        } />
+        
+        <Route path="/quick-deepseek-config" element={
+           <ProtectedRoute>
+             <QuickDeepSeekConfig />
+           </ProtectedRoute>
+         } />
+         
+         <Route path="/deepseek-test" element={
+           <ProtectedRoute>
+             <DeepSeekTest />
+           </ProtectedRoute>
+         } />
         
         {/* 默认路由重定向 */}
         <Route path="/" element={<Navigate to="/auth" replace />} />

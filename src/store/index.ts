@@ -74,6 +74,25 @@ export interface CheckIn {
   status: 'pending' | 'approved' | 'rejected';
 }
 
+// AI 对话消息接口
+export interface ChatMessage {
+  id: string;
+  type: 'user' | 'coach';
+  content: string;
+  timestamp: Date;
+  coachId: string; // 关联的教练ID
+}
+
+// AI 对话会话接口
+export interface ChatSession {
+  id: string;
+  userId: string;
+  coachId: string;
+  messages: ChatMessage[];
+  lastActiveAt: Date;
+  createdAt: Date;
+}
+
 // 应用状态接口
 interface AppState {
   // 用户相关
@@ -91,6 +110,10 @@ interface AppState {
   todayCheckIns: CheckIn[];
   checkInHistory: CheckIn[];
   
+  // AI 对话相关
+  currentChatSession: ChatSession | null;
+  chatHistory: ChatSession[];
+  
   // DeepSeek API 相关
   deepSeekApiKey: string | null;
   deepSeekEnabled: boolean;
@@ -106,6 +129,13 @@ interface AppState {
   createContract: (contract: Omit<Contract, 'id'>) => void;
   addCheckIn: (checkIn: Omit<CheckIn, 'id'>) => void;
   updateCheckInStatus: (checkInId: string, status: CheckIn['status']) => void;
+  
+  // AI 对话相关方法
+  initializeChatSession: (coachId: string) => void;
+  addChatMessage: (message: Omit<ChatMessage, 'id'>) => void;
+  clearCurrentChatSession: () => void;
+  loadChatSession: (sessionId: string) => void;
+  
   setDeepSeekConfig: (apiKey: string, enabled: boolean) => void;
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
@@ -134,7 +164,7 @@ export const useAppStore = create<AppState>()(persist(
       id: 'test-coach-1',
       name: '小美教练',
       personality: 'gentle' as const,
-      avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face',
+      avatar: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTUwIiBoZWlnaHQ9IjE1MCIgdmlld0JveD0iMCAwIDE1MCAxNTAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxjaXJjbGUgY3g9Ijc1IiBjeT0iNzUiIHI9Ijc1IiBmaWxsPSJ1cmwoI2dyYWRpZW50MCkiLz4KPGNpcmNsZSBjeD0iNzUiIGN5PSI2MCIgcj0iMjUiIGZpbGw9IndoaXRlIiBmaWxsLW9wYWNpdHk9IjAuOSIvPgo8ZWxsaXBzZSBjeD0iNzUiIGN5PSIxMjAiIHJ4PSI0MCIgcnk9IjMwIiBmaWxsPSJ3aGl0ZSIgZmlsbC1vcGFjaXR5PSIwLjkiLz4KPGRlZnM+CjxsaW5lYXJHcmFkaWVudCBpZD0iZ3JhZGllbnQwIiB4MT0iMCIgeTE9IjAiIHgyPSIxNTAiIHkyPSIxNTAiIGdyYWRpZW50VW5pdHM9InVzZXJTcGFjZU9uVXNlIj4KPHN0b3Agc3RvcC1jb2xvcj0iIzk5NTVGRiIvPgo8c3RvcCBvZmZzZXQ9IjEiIHN0b3AtY29sb3I9IiNGRjU1REQiLz4KPC9saW5lYXJHcmFkaWVudD4KPC9kZWZzPgo8L3N2Zz4K',
       userId: 'test-user-1',
       customIdentity: {
         role: '专业健身教练',
@@ -145,16 +175,30 @@ export const useAppStore = create<AppState>()(persist(
       config: {
         voiceEnabled: true,
         reminderFrequency: 'medium' as const,
-        deepSeekEnabled: true,
-        deepSeekApiKey: 'sk-0834a814d7dd43049b8f2757f3f3554f'
+        deepSeekEnabled: false,
+        deepSeekApiKey: undefined
       }
     },
-    currentContract: null,
+    currentContract: {
+      id: 'test-contract-1',
+      userId: 'test-user-1',
+      type: 'normal' as const,
+      amount: 500,
+      startDate: new Date(),
+      endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30天后
+      status: 'active' as const,
+      dailyTasks: ['早餐', '午餐', '晚餐', '健身', '蛋白质'],
+      completedDays: 0,
+      violationDays: 0,
+      remainingAmount: 500
+    },
     contractHistory: [],
     todayCheckIns: [],
     checkInHistory: [],
-    deepSeekApiKey: 'sk-0834a814d7dd43049b8f2757f3f3554f',
-    deepSeekEnabled: true,
+    currentChatSession: null,
+    chatHistory: [],
+    deepSeekApiKey: null,
+    deepSeekEnabled: false,
     loading: false,
     error: null,
     
@@ -191,10 +235,48 @@ export const useAppStore = create<AppState>()(persist(
       const today = new Date().toDateString();
       const isToday = checkIn.timestamp.toDateString() === today;
       
-      set(state => ({
-        todayCheckIns: isToday ? [...state.todayCheckIns, checkIn] : state.todayCheckIns,
-        checkInHistory: [...state.checkInHistory, checkIn]
-      }));
+      set(state => {
+        const newTodayCheckIns = isToday ? [...state.todayCheckIns, checkIn] : state.todayCheckIns;
+        const newCheckInHistory = [...state.checkInHistory, checkIn];
+        
+        // 如果是今天的打卡且状态为approved，检查是否完成了当天所有任务
+        let updatedContract = state.currentContract;
+        if (isToday && checkIn.status === 'approved' && state.currentContract) {
+          // 必需的打卡类型
+          const requiredTypes: CheckIn['type'][] = ['breakfast', 'lunch', 'dinner', 'gym', 'protein'];
+          
+          // 检查今天所有必需类型是否都有approved状态的打卡
+          const approvedTypes = new Set(
+            newTodayCheckIns
+              .filter(c => c.status === 'approved')
+              .map(c => c.type)
+          );
+          
+          const allRequiredCompleted = requiredTypes.every(type => approvedTypes.has(type));
+          
+          // 如果所有必需任务都完成了，且今天还没有被计入completedDays
+          if (allRequiredCompleted) {
+            // 检查今天是否已经被计算过了（避免重复计算）
+            const todayCheckInsBeforeThis = state.todayCheckIns.filter(c => c.status === 'approved');
+            const wasAlreadyComplete = requiredTypes.every(type => 
+              todayCheckInsBeforeThis.some(c => c.type === type && c.status === 'approved')
+            );
+            
+            if (!wasAlreadyComplete) {
+              updatedContract = {
+                ...state.currentContract,
+                completedDays: state.currentContract.completedDays + 1
+              };
+            }
+          }
+        }
+        
+        return {
+          todayCheckIns: newTodayCheckIns,
+          checkInHistory: newCheckInHistory,
+          currentContract: updatedContract
+        };
+      });
     },
     
     updateCheckInStatus: (checkInId, status) => {
@@ -206,6 +288,73 @@ export const useAppStore = create<AppState>()(persist(
           checkIn.id === checkInId ? { ...checkIn, status } : checkIn
         )
       }));
+    },
+    
+    // AI 对话相关方法
+    initializeChatSession: (coachId) => {
+      const state = get();
+      const userId = state.user?.id;
+      if (!userId) return;
+      
+      // 检查是否已有当前教练的会话
+      const existingSession = state.chatHistory.find(
+        session => session.coachId === coachId && session.userId === userId
+      );
+      
+      if (existingSession) {
+        // 如果已有会话，加载它
+        set({ currentChatSession: existingSession });
+      } else {
+        // 创建新会话
+        const newSession: ChatSession = {
+          id: Date.now().toString(),
+          userId,
+          coachId,
+          messages: [],
+          lastActiveAt: new Date(),
+          createdAt: new Date()
+        };
+        
+        set({ 
+          currentChatSession: newSession,
+          chatHistory: [...state.chatHistory, newSession]
+        });
+      }
+    },
+    
+    addChatMessage: (messageData) => {
+      const state = get();
+      if (!state.currentChatSession) return;
+      
+      const message: ChatMessage = {
+        ...messageData,
+        id: Date.now().toString(),
+      };
+      
+      const updatedSession: ChatSession = {
+        ...state.currentChatSession,
+        messages: [...state.currentChatSession.messages, message],
+        lastActiveAt: new Date()
+      };
+      
+      set({
+        currentChatSession: updatedSession,
+        chatHistory: state.chatHistory.map(session => 
+          session.id === updatedSession.id ? updatedSession : session
+        )
+      });
+    },
+    
+    clearCurrentChatSession: () => {
+      set({ currentChatSession: null });
+    },
+    
+    loadChatSession: (sessionId) => {
+      const state = get();
+      const session = state.chatHistory.find(s => s.id === sessionId);
+      if (session) {
+        set({ currentChatSession: session });
+      }
     },
     
     setDeepSeekConfig: (apiKey, enabled) => {
@@ -242,6 +391,8 @@ export const useAppStore = create<AppState>()(persist(
       currentContract: state.currentContract,
       contractHistory: state.contractHistory,
       checkInHistory: state.checkInHistory,
+      currentChatSession: state.currentChatSession,
+      chatHistory: state.chatHistory,
       deepSeekApiKey: state.deepSeekApiKey,
       deepSeekEnabled: state.deepSeekEnabled,
     }),
@@ -254,6 +405,8 @@ export const useIsLoggedIn = () => useAppStore(state => state.isLoggedIn);
 export const useAICoach = () => useAppStore(state => state.aiCoach);
 export const useCurrentContract = () => useAppStore(state => state.currentContract);
 export const useTodayCheckIns = () => useAppStore(state => state.todayCheckIns);
+export const useCurrentChatSession = () => useAppStore(state => state.currentChatSession);
+export const useChatHistory = () => useAppStore(state => state.chatHistory);
 export const useDeepSeekApiKey = () => useAppStore(state => state.deepSeekApiKey);
 export const useDeepSeekEnabled = () => useAppStore(state => state.deepSeekEnabled);
 export const useLoading = () => useAppStore(state => state.loading);

@@ -6,7 +6,7 @@
 
 ## 重要说明
 
-✅ **已完成配置**：您的 DeepSeek API key (`sk-0834a814d7dd43049b8f2757f3f3554f`) 已经成功集成到应用中！
+✅ **已完成配置**：DeepSeek API 集成功能已经成功添加到应用中！
 
 - AI 增强功能已自动启用
 - 应用会优先使用您配置的 API key
@@ -33,7 +33,7 @@
 
 ### 1. ✅ API Key 已配置
 您的 DeepSeek API key 已经成功集成到应用中：
-- API Key: `sk-0834a814d7dd43049b8f2757f3f3554f`
+- API Key: `请在设置页面输入您的 DeepSeek API Key`
 - 状态: 已启用
 - 自动初始化: 是
 

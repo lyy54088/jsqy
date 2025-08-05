@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Calendar, Camera, MessageCircle, Trophy, Target, Clock, DollarSign } from 'lucide-react';
+import { Calendar, Camera, MessageCircle, Trophy, Target, Users } from 'lucide-react';
 import { useUser, useCurrentContract, useTodayCheckIns, useAICoach } from '@/store';
 
 const Dashboard: React.FC = () => {
@@ -9,6 +9,15 @@ const Dashboard: React.FC = () => {
   const currentContract = useCurrentContract();
   const todayCheckIns = useTodayCheckIns();
   const aiCoach = useAICoach();
+  const [coachName, setCoachName] = useState('小美教练');
+
+  // 加载保存的教练名字
+  useEffect(() => {
+    const savedCoachName = localStorage.getItem('coachName');
+    if (savedCoachName) {
+      setCoachName(savedCoachName);
+    }
+  }, []);
 
   const today = new Date();
   const todayStr = today.toLocaleDateString('zh-CN', { 
@@ -44,8 +53,18 @@ const Dashboard: React.FC = () => {
               >
                 <MessageCircle className="w-5 h-5 text-blue-600" />
               </button>
-              <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white text-sm font-medium">
-                {user?.nickname?.charAt(0) || 'U'}
+              <div className="w-8 h-8 rounded-full overflow-hidden">
+                {user?.avatar ? (
+                  <img 
+                    src={user.avatar} 
+                    alt="头像" 
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center text-white text-sm font-medium">
+                    {user?.nickname?.charAt(0) || 'U'}
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -155,7 +174,7 @@ const Dashboard: React.FC = () => {
               </div>
               <div className="flex-1">
                 <div className="flex items-center gap-2 mb-2">
-                  <h4 className="font-semibold text-gray-900">{aiCoach.name}</h4>
+                  <h4 className="font-semibold text-gray-900">{coachName}</h4>
                   <span className="text-xs bg-purple-200 text-purple-700 px-2 py-1 rounded-full">
                     {aiCoach.personality === 'strict' ? '严格型' : aiCoach.personality === 'gentle' ? '温和型' : '幽默型'}
                   </span>
@@ -178,7 +197,7 @@ const Dashboard: React.FC = () => {
         )}
 
         {/* 快捷功能 */}
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-3 gap-3">
           <button 
             onClick={() => navigate('/history')}
             className="bg-white rounded-xl p-4 border border-gray-200 hover:border-gray-300 transition-colors"
@@ -186,6 +205,15 @@ const Dashboard: React.FC = () => {
             <Calendar className="w-6 h-6 text-blue-600 mb-2" />
             <p className="text-sm font-medium text-gray-900">历史记录</p>
             <p className="text-xs text-gray-600">查看打卡历史</p>
+          </button>
+          
+          <button 
+            onClick={() => navigate('/community')}
+            className="bg-white rounded-xl p-4 border border-gray-200 hover:border-gray-300 transition-colors"
+          >
+            <Users className="w-6 h-6 text-orange-600 mb-2" />
+            <p className="text-sm font-medium text-gray-900">健身社群</p>
+            <p className="text-xs text-gray-600">加入附近社群</p>
           </button>
           
           <button 

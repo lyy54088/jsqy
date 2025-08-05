@@ -145,7 +145,7 @@ const DatabaseTest: React.FC = () => {
       const dbStats = await getMockDatabaseStats();
       setStats(dbStats);
       addLog('📊 统计信息已更新');
-    } catch (err) {
+    } catch {
       addLog('❌ 获取统计信息失败');
     }
   };
@@ -167,7 +167,7 @@ const DatabaseTest: React.FC = () => {
       } else {
         addLog('⚠️ 数据库健康状态异常');
       }
-    } catch (err) {
+    } catch {
       addLog('❌ 健康检查失败');
     }
   };

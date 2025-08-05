@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Bot, Volume2, VolumeX, Bell, BellOff, Sparkles } from 'lucide-react';
+import { ArrowLeft, Bot, Volume2, VolumeX, Bell, Sparkles } from 'lucide-react';
 import { useAppStore } from '@/store';
 import type { AICoach } from '@/store';
 
 const AICoachSetup: React.FC = () => {
+  const [selectedGoal, setSelectedGoal] = useState<'lose_weight' | 'build_muscle' | 'improve_fitness'>('build_muscle');
   const navigate = useNavigate();
   const { setAICoach, user } = useAppStore();
   const [selectedPersonality, setSelectedPersonality] = useState<'strict' | 'gentle' | 'humorous'>('gentle');
@@ -17,7 +18,7 @@ const AICoachSetup: React.FC = () => {
       type: 'gentle' as const,
       name: '温和型',
       description: '耐心鼓励，温柔提醒',
-      avatar: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?prompt=gentle%20female%20fitness%20coach%20avatar%2C%20warm%20smile%2C%20encouraging%20expression%2C%20professional%20sportswear%2C%20soft%20lighting%2C%20friendly%20demeanor&image_size=square',
+      avatar: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTUwIiBoZWlnaHQ9IjE1MCIgdmlld0JveD0iMCAwIDE1MCAxNTAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxjaXJjbGUgY3g9Ijc1IiBjeT0iNzUiIHI9Ijc1IiBmaWxsPSJ1cmwoI2dyYWRpZW50MCkiLz4KPGNpcmNsZSBjeD0iNzUiIGN5PSI2MCIgcj0iMjUiIGZpbGw9IndoaXRlIiBmaWxsLW9wYWNpdHk9IjAuOSIvPgo8ZWxsaXBzZSBjeD0iNzUiIGN5PSIxMjAiIHJ4PSI0MCIgcnk9IjMwIiBmaWxsPSJ3aGl0ZSIgZmlsbC1vcGFjaXR5PSIwLjkiLz4KPGRlZnM+CjxsaW5lYXJHcmFkaWVudCBpZD0iZ3JhZGllbnQwIiB4MT0iMCIgeTE9IjAiIHgyPSIxNTAiIHkyPSIxNTAiIGdyYWRpZW50VW5pdHM9InVzZXJTcGFjZU9uVXNlIj4KPHN0b3Agc3RvcC1jb2xvcj0iIzEwQjk4MSIvPgo8c3RvcCBvZmZzZXQ9IjEiIHN0b3AtY29sb3I9IiMwNTk2NjkiLz4KPC9saW5lYXJHcmFkaWVudD4KPC9kZWZzPgo8L3N2Zz4K',
       sampleMessage: '今天的训练很棒！记得补充水分，身体是革命的本钱哦～',
       color: 'from-green-400 to-green-500'
     },
@@ -25,7 +26,7 @@ const AICoachSetup: React.FC = () => {
       type: 'strict' as const,
       name: '严格型',
       description: '严格督促，高标准要求',
-      avatar: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?prompt=strict%20male%20fitness%20coach%20avatar%2C%20serious%20expression%2C%20determined%20look%2C%20professional%20trainer%20outfit%2C%20strong%20lighting%2C%20authoritative%20presence&image_size=square',
+      avatar: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTUwIiBoZWlnaHQ9IjE1MCIgdmlld0JveD0iMCAwIDE1MCAxNTAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxjaXJjbGUgY3g9Ijc1IiBjeT0iNzUiIHI9Ijc1IiBmaWxsPSJ1cmwoI2dyYWRpZW50MCkiLz4KPGNpcmNsZSBjeD0iNzUiIGN5PSI2MCIgcj0iMjUiIGZpbGw9IndoaXRlIiBmaWxsLW9wYWNpdHk9IjAuOSIvPgo8ZWxsaXBzZSBjeD0iNzUiIGN5PSIxMjAiIHJ4PSI0MCIgcnk9IjMwIiBmaWxsPSJ3aGl0ZSIgZmlsbC1vcGFjaXR5PSIwLjkiLz4KPGRlZnM+CjxsaW5lYXJHcmFkaWVudCBpZD0iZ3JhZGllbnQwIiB4MT0iMCIgeTE9IjAiIHgyPSIxNTAiIHkyPSIxNTAiIGdyYWRpZW50VW5pdHM9InVzZXJTcGFjZU9uVXNlIj4KPHN0b3Agc3RvcC1jb2xvcj0iI0VGNDQ0NCIvPgo8c3RvcCBvZmZzZXQ9IjEiIHN0b3AtY29sb3I9IiNEQzI2MjYiLz4KPC9saW5lYXJHcmFkaWVudD4KPC9kZWZzPgo8L3N2Zz4K',
       sampleMessage: '还有2个打卡任务未完成！时间不等人，立即行动！',
       color: 'from-red-400 to-red-500'
     },
@@ -33,7 +34,7 @@ const AICoachSetup: React.FC = () => {
       type: 'humorous' as const,
       name: '幽默型',
       description: '轻松有趣，寓教于乐',
-      avatar: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?prompt=humorous%20fitness%20coach%20avatar%2C%20cheerful%20smile%2C%20playful%20expression%2C%20colorful%20sportswear%2C%20bright%20lighting%2C%20fun%20personality&image_size=square',
+      avatar: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTUwIiBoZWlnaHQ9IjE1MCIgdmlld0JveD0iMCAwIDE1MCAxNTAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxjaXJjbGUgY3g9Ijc1IiBjeT0iNzUiIHI9Ijc1IiBmaWxsPSJ1cmwoI2dyYWRpZW50MCkiLz4KPGNpcmNsZSBjeD0iNzUiIGN5PSI2MCIgcj0iMjUiIGZpbGw9IndoaXRlIiBmaWxsLW9wYWNpdHk9IjAuOSIvPgo8ZWxsaXBzZSBjeD0iNzUiIGN5PSIxMjAiIHJ4PSI0MCIgcnk9IjMwIiBmaWxsPSJ3aGl0ZSIgZmlsbC1vcGFjaXR5PSIwLjkiLz4KPGRlZnM+CjxsaW5lYXJHcmFkaWVudCBpZD0iZ3JhZGllbnQwIiB4MT0iMCIgeTE9IjAiIHgyPSIxNTAiIHkyPSIxNTAiIGdyYWRpZW50VW5pdHM9InVzZXJTcGFjZU9uVXNlIj4KPHN0b3Agc3RvcC1jb2xvcj0iI0ZCQkYyNCIvPgo8c3RvcCBvZmZzZXQ9IjEiIHN0b3AtY29sb3I9IiNGNTk3MjAiLz4KPC9saW5lYXJHcmFkaWVudD4KPC9kZWZzPgo8L3N2Zz4K',
       sampleMessage: '哎呀，你的肌肉在偷懒呢！快去唤醒它们吧～💪',
       color: 'from-yellow-400 to-orange-500'
     }
@@ -79,7 +80,32 @@ const AICoachSetup: React.FC = () => {
         </div>
       </div>
 
-      <div className="max-w-md mx-auto px-4 py-6 space-y-6">
+            <div className="max-w-md mx-auto px-4 py-6 space-y-6">
+        {/* 目标选择 */}
+        <div className="bg-white rounded-xl p-4 border border-gray-200">
+          <h3 className="font-semibold text-gray-900 mb-4">您的主要目标是什么？</h3>
+          <div className="space-y-3">
+            <button
+              onClick={() => setSelectedGoal('lose_weight')}
+              className={`w-full p-4 rounded-lg border-2 transition-all text-left flex items-center ${selectedGoal === 'lose_weight' ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'}`}>
+              <i className={`fas fa-weight-hanging text-2xl mr-4 ${selectedGoal === 'lose_weight' ? 'text-blue-500' : 'text-gray-400'}`}></i>
+              <span className={`text-lg ${selectedGoal === 'lose_weight' ? 'font-bold text-gray-900' : 'text-gray-600'}`}>减重</span>
+            </button>
+            <button
+              onClick={() => setSelectedGoal('build_muscle')}
+              className={`w-full p-4 rounded-lg border-2 transition-all text-left flex items-center ${selectedGoal === 'build_muscle' ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'}`}>
+              <i className={`fas fa-dumbbell text-2xl mr-4 ${selectedGoal === 'build_muscle' ? 'text-blue-500' : 'text-gray-400'}`}></i>
+              <span className={`text-lg ${selectedGoal === 'build_muscle' ? 'font-bold text-gray-900' : 'text-gray-600'}`}>增肌</span>
+            </button>
+            <button
+              onClick={() => setSelectedGoal('improve_fitness')}
+              className={`w-full p-4 rounded-lg border-2 transition-all text-left flex items-center ${selectedGoal === 'improve_fitness' ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'}`}>
+              <i className={`fas fa-heart-pulse text-2xl mr-4 ${selectedGoal === 'improve_fitness' ? 'text-blue-500' : 'text-gray-400'}`}></i>
+              <span className={`text-lg ${selectedGoal === 'improve_fitness' ? 'font-bold text-gray-900' : 'text-gray-600'}`}>提升体能</span>
+            </button>
+          </div>
+        </div>
+
         {/* 教练名称 */}
         <div className="bg-white rounded-xl p-4 border border-gray-200">
           <h3 className="font-semibold text-gray-900 mb-4">给你的教练起个名字</h3>

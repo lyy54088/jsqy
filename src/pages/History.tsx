@@ -7,7 +7,6 @@ const History: React.FC = () => {
   const navigate = useNavigate();
   const { checkInHistory, contractHistory } = useAppStore();
   const [activeTab, setActiveTab] = useState<'checkins' | 'contracts'>('checkins');
-  const [selectedDate, setSelectedDate] = useState('');
 
   // 按日期分组打卡记录
   const groupedCheckIns = checkInHistory.reduce((groups, checkIn) => {

@@ -1,15 +1,8 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Send, Mic, MicOff, Volume2, VolumeX, Settings, Sparkles } from 'lucide-react';
-import { useAICoach, useUser, useCurrentContract, useTodayCheckIns, useDeepSeekApiKey, useDeepSeekEnabled, useAppStore } from '@/store';
+import { ArrowLeft, Send, Mic, MicOff, Volume2, Settings, Sparkles } from 'lucide-react';
+import { useAICoach, useUser, useCurrentContract, useTodayCheckIns, useDeepSeekApiKey, useDeepSeekEnabled, useCurrentChatSession, useAppStore } from '@/store';
 import { initializeDeepSeek, FitnessCoachAI, type DeepSeekMessage } from '@/lib/deepseek-api';
-
-interface Message {
-  id: string;
-  type: 'user' | 'coach';
-  content: string;
-  timestamp: Date;
-}
 
 const AICoach: React.FC = () => {
   const navigate = useNavigate();
@@ -19,15 +12,28 @@ const AICoach: React.FC = () => {
   const todayCheckIns = useTodayCheckIns();
   const deepSeekApiKey = useDeepSeekApiKey();
   const deepSeekEnabled = useDeepSeekEnabled();
-  const { setDeepSeekConfig } = useAppStore();
-  const [messages, setMessages] = useState<Message[]>([]);
+  const currentChatSession = useCurrentChatSession();
+  const { initializeChatSession, addChatMessage } = useAppStore();
+
   const [inputText, setInputText] = useState('');
   const [isListening, setIsListening] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
   const [fitnessCoachAI, setFitnessCoachAI] = useState<FitnessCoachAI | null>(null);
-  const [conversationHistory, setConversationHistory] = useState<DeepSeekMessage[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const isInitialized = useRef(false);
+  
+  // 自定义教练信息
+  const [coachName, setCoachName] = useState('小美教练');
+  const [coachAvatar, setCoachAvatar] = useState('');
+
+  // 从当前会话获取消息列表
+  const messages = currentChatSession?.messages || [];
+  
+  // 转换为 DeepSeek 消息格式
+  const conversationHistory: DeepSeekMessage[] = messages.map(msg => ({
+    role: msg.type === 'user' ? 'user' : 'assistant',
+    content: msg.content
+  }));
 
   // 获取欢迎消息
   const getWelcomeMessage = useCallback(() => {
@@ -35,27 +41,60 @@ const AICoach: React.FC = () => {
     
     const greetings = {
       strict: [
-        `${user.nickname}，我是你的教练${aiCoach.name}！`,
+        `${user.nickname}，我是你的教练${coachName}！`,
         '有什么健身问题尽管问我，我会严格督促你完成目标！'
       ],
       gentle: [
-        `你好${user.nickname}，我是${aiCoach.name}～`,
+        `你好${user.nickname}，我是${coachName}～`,
         '有任何问题都可以和我聊聊，我会耐心帮助你的！'
       ],
       humorous: [
-        `嗨${user.nickname}！我是你的专属教练${aiCoach.name}！`,
+        `嗨${user.nickname}！我是你的专属教练${coachName}！`,
         '有什么想聊的吗？我可是很有趣的教练哦～'
       ]
     };
     
     return greetings[aiCoach.personality].join('\n\n');
-  }, [aiCoach, user]);
+  }, [aiCoach, user, coachName]);
 
   // 生成AI回复
   const generateAIResponse = useCallback((userMessage: string): string => {
     if (!aiCoach || !user) return '';
     
     const lowerMessage = userMessage.toLowerCase();
+    
+    // 使用自定义身份信息
+    const customIdentity = aiCoach.customIdentity;
+    const hasCustomIdentity = customIdentity && (customIdentity.role || customIdentity.description || customIdentity.speakingStyle);
+    
+    // 自我介绍相关问题
+    if (lowerMessage.includes('你是谁') || lowerMessage.includes('介绍') || lowerMessage.includes('你好') || lowerMessage === '谁') {
+      if (hasCustomIdentity) {
+        // 使用自定义身份信息
+        let introduction = `你好${user.nickname}！我是${coachName}`;
+        if (customIdentity.role) {
+          introduction += `，${customIdentity.role}`;
+        }
+        if (customIdentity.description) {
+          introduction += `。${customIdentity.description}`;
+        }
+        if (customIdentity.speakingStyle) {
+          introduction += ` ${customIdentity.speakingStyle}`;
+        }
+        if (customIdentity.traits && customIdentity.traits.length > 0) {
+          introduction += ` 我的特点是：${customIdentity.traits.join('、')}。`;
+        }
+        return introduction;
+      } else {
+        // 使用默认性格回复
+        const responses = {
+          strict: `我是${coachName}，你的专属健身教练！我会严格监督你的训练计划，确保你达成健身目标。不要想着偷懒，我会盯着你的每一个动作！`,
+          gentle: `你好${user.nickname}～我是${coachName}，你的贴心健身教练。我会温柔地陪伴你完成健身之旅，有任何问题都可以随时问我哦！`,
+          humorous: `哈喽！我是大名鼎鼎的${coachName}教练！专业拯救懒癌患者，让你从"葛优躺"变成"施瓦辛格"！准备好和我一起燃烧卡路里了吗？🔥`
+        };
+        return responses[aiCoach.personality];
+      }
+    }
     
     // 根据关键词生成回复
     if (lowerMessage.includes('累') || lowerMessage.includes('疲劳')) {
@@ -86,73 +125,172 @@ const AICoach: React.FC = () => {
     }
     
     if (lowerMessage.includes('运动') || lowerMessage.includes('健身')) {
+      if (hasCustomIdentity && customIdentity.speakingStyle) {
+        // 使用自定义说话风格
+        let response = '关于运动健身，我建议你要有计划有强度地进行训练。';
+        if (customIdentity.speakingStyle.includes('温和') || customIdentity.speakingStyle.includes('耐心')) {
+          response = '运动是一个循序渐进的过程～根据自己的身体状况来调整强度，重要的是坚持下去。';
+        } else if (customIdentity.speakingStyle.includes('幽默') || customIdentity.speakingStyle.includes('有趣')) {
+          response = '运动就像谈恋爱，需要激情也需要坚持！让我们和健康的身体"谈一场不分手的恋爱"吧！';
+        } else if (customIdentity.speakingStyle.includes('专业') || customIdentity.speakingStyle.includes('简单')) {
+          response = '运动健身需要科学的方法和持续的坚持。建议制定合理的训练计划，循序渐进地提高强度。';
+        }
+        return response;
+      } else {
+        // 使用默认性格回复
+        const responses = {
+          strict: '运动要有计划有强度！不要偷懒，每个动作都要标准。记住，汗水不会骗人！',
+          gentle: '运动是一个循序渐进的过程～根据自己的身体状况来调整强度，重要的是坚持下去。',
+          humorous: '运动就像谈恋爱，需要激情也需要坚持！让我们和健康的身体"谈一场不分手的恋爱"吧！'
+        };
+        return responses[aiCoach.personality];
+      }
+    }
+    
+    // 时间相关问题
+    if (lowerMessage.includes('什么时候') || lowerMessage.includes('时间')) {
       const responses = {
-        strict: '运动要有计划有强度！不要偷懒，每个动作都要标准。记住，汗水不会骗人！',
-        gentle: '运动是一个循序渐进的过程～根据自己的身体状况来调整强度，重要的是坚持下去。',
-        humorous: '运动就像谈恋爱，需要激情也需要坚持！让我们和健康的身体"谈一场不分手的恋爱"吧！'
+        strict: '最佳运动时间是早上6-8点或下午4-6点！不要找借口，现在就是最好的时间！',
+        gentle: '其实任何时间都可以运动哦～选择你觉得最舒服的时间段，重要的是养成习惯。',
+        humorous: '什么时候运动最好？当然是"现在"啦！不过如果你非要问具体时间，我推荐早上或傍晚～'
+      };
+      return responses[aiCoach.personality];
+    }
+    
+    // 效果相关问题
+    if (lowerMessage.includes('效果') || lowerMessage.includes('多久') || lowerMessage.includes('见效')) {
+      const responses = {
+        strict: '想看到效果？至少坚持4-6周！没有捷径，只有汗水和坚持！停止幻想，开始行动！',
+        gentle: '一般来说，坚持运动2-4周就能感受到身体的变化，6-8周能看到明显效果。要有耐心哦～',
+        humorous: '想要马上看到效果？除非你有哆啦A梦的时光机！一般需要4-6周，但相信我，等待是值得的！'
+      };
+      return responses[aiCoach.personality];
+    }
+    
+    // 鼓励和支持
+    if (lowerMessage.includes('谢谢') || lowerMessage.includes('感谢')) {
+      const responses = {
+        strict: '不用谢！这是我的职责！继续保持这种积极态度，成功就在前方！',
+        gentle: '不客气呀～能帮到你我很开心！有什么需要随时找我哦～',
+        humorous: '哎呀，这么客气干嘛～我们是战友嘛！一起加油，向着马甲线进发！💪'
       };
       return responses[aiCoach.personality];
     }
     
     // 默认回复
-    const defaultResponses = {
-      strict: '说得对！保持这种积极的态度，严格执行计划，成功就在前方！',
-      gentle: '嗯嗯，我理解你的想法～有什么具体的问题可以详细说说，我会帮助你的。',
-      humorous: '哈哈，有趣！你知道吗，和你聊天让我觉得当教练真是太有意思了！'
-    };
-    
-    return defaultResponses[aiCoach.personality];
+    if (hasCustomIdentity && customIdentity.speakingStyle) {
+      // 使用自定义说话风格的默认回复
+      let response = '我理解你的想法，有什么具体的问题可以详细说说吗？';
+      if (customIdentity.speakingStyle.includes('温和') || customIdentity.speakingStyle.includes('耐心')) {
+        response = '嗯嗯，我理解你的想法～有什么具体的问题可以详细说说，我会耐心帮助你的。';
+      } else if (customIdentity.speakingStyle.includes('幽默') || customIdentity.speakingStyle.includes('有趣')) {
+        response = '哈哈，有趣！你知道吗，和你聊天让我觉得当教练真是太有意思了！';
+      } else if (customIdentity.speakingStyle.includes('专业') || customIdentity.speakingStyle.includes('简单')) {
+        response = '我明白了。如果你有具体的健身问题，我很乐意为你提供专业的建议。';
+      } else if (customIdentity.speakingStyle.includes('鼓励') || customIdentity.speakingStyle.includes('激励')) {
+        response = '说得对！保持这种积极的态度，坚持下去，成功就在前方！';
+      }
+      return response;
+    } else {
+      // 使用默认性格回复
+      const defaultResponses = {
+        strict: '说得对！保持这种积极的态度，严格执行计划，成功就在前方！',
+        gentle: '嗯嗯，我理解你的想法～有什么具体的问题可以详细说说，我会帮助你的。',
+        humorous: '哈哈，有趣！你知道吗，和你聊天让我觉得当教练真是太有意思了！'
+      };
+      
+      return defaultResponses[aiCoach.personality];
+    }
   }, [aiCoach, user]);
 
   // 初始化 DeepSeek API
   useEffect(() => {
-    // 使用用户提供的 DeepSeek API key，如果没有配置则使用默认的
+    // 使用用户提供的 DeepSeek API key
     const userApiKey = deepSeekApiKey || aiCoach?.config.deepSeekApiKey;
-    const defaultApiKey = 'sk-0834a814d7dd43049b8f2757f3f3554f';
-    const apiKey = userApiKey || defaultApiKey;
+    const apiKey = userApiKey;
     
-    if (apiKey && aiCoach && user) {
+    console.log('DeepSeek 初始化状态:', {
+      hasApiKey: !!apiKey,
+      deepSeekEnabled,
+      hasAiCoach: !!aiCoach,
+      hasUser: !!user
+    });
+    
+    if (apiKey && aiCoach && user && deepSeekEnabled) {
       try {
         const deepSeek = initializeDeepSeek(apiKey);
         if (deepSeek) {
+          // 计算BMI和状态
+          const heightInM = user.height / 100;
+          const bmi = user.weight / (heightInM * heightInM);
+          const getBMIStatus = (bmi: number) => {
+            if (bmi < 18.5) return '偏瘦';
+            if (bmi < 24) return '正常';
+            if (bmi < 28) return '偏胖';
+            return '肥胖';
+          };
+          
           const userContext = {
             name: user.nickname,
             goals: [user.fitnessGoal === 'lose_weight' ? '减重' : '增肌'],
             currentProgress: currentContract ? `第${currentContract.completedDays}天` : '刚开始',
             todayCheckIns: todayCheckIns.filter(c => c.status === 'approved').length,
-            totalCheckIns: 5
+            totalCheckIns: 5,
+            // 身体信息
+            age: user.age,
+            height: user.height,
+            weight: user.weight,
+            bmi: parseFloat(bmi.toFixed(1)),
+            bmiStatus: getBMIStatus(bmi),
+            fitnessGoal: user.fitnessGoal
           };
           
-          const coachAI = new FitnessCoachAI(deepSeek, aiCoach.personality, userContext);
+          const coachAI = new FitnessCoachAI(deepSeek, aiCoach.personality, userContext, aiCoach.customIdentity);
           setFitnessCoachAI(coachAI);
-          
-          // 如果使用的是默认 API key，自动更新配置
-          if (!userApiKey) {
-            setDeepSeekConfig(defaultApiKey, true);
-          }
+          console.log('DeepSeek AI 初始化成功');
         }
       } catch (error) {
         console.error('初始化 DeepSeek API 失败:', error);
         setFitnessCoachAI(null);
       }
     } else {
+      console.log('DeepSeek 未启用或配置不完整，使用本地回复');
       setFitnessCoachAI(null);
     }
-  }, [aiCoach?.id, aiCoach?.personality, user?.id, deepSeekApiKey, deepSeekEnabled]);
+  }, [aiCoach?.id, aiCoach?.personality, aiCoach?.customIdentity, user?.id, deepSeekApiKey, deepSeekEnabled]);
 
-  // 初始化对话
+  // 加载自定义教练信息
   useEffect(() => {
-    if (aiCoach && !isInitialized.current) {
-      const welcomeMessage: Message = {
-        id: Date.now().toString(),
-        type: 'coach',
-        content: getWelcomeMessage(),
-        timestamp: new Date()
-      };
-      setMessages([welcomeMessage]);
+    const savedCoachName = localStorage.getItem('coachName');
+    const savedCoachAvatar = localStorage.getItem('coachAvatar');
+    if (savedCoachName) {
+      setCoachName(savedCoachName);
+    }
+    if (savedCoachAvatar) {
+      setCoachAvatar(savedCoachAvatar);
+    }
+  }, []);
+
+  // 初始化对话会话
+  useEffect(() => {
+    if (aiCoach && user && !isInitialized.current) {
+      // 初始化或加载对话会话
+      initializeChatSession(aiCoach.id);
       isInitialized.current = true;
     }
-  }, [aiCoach, getWelcomeMessage]);
+  }, [aiCoach, user, initializeChatSession]);
+
+  // 添加欢迎消息（仅在新会话时）
+  useEffect(() => {
+    if (currentChatSession && currentChatSession.messages.length === 0 && aiCoach) {
+      addChatMessage({
+        type: 'coach',
+        content: getWelcomeMessage(),
+        timestamp: new Date(),
+        coachId: aiCoach.id
+      });
+    }
+  }, [currentChatSession, aiCoach, getWelcomeMessage, addChatMessage]);
 
   // 自动滚动到底部
   useEffect(() => {
@@ -161,57 +299,48 @@ const AICoach: React.FC = () => {
 
   // 发送消息
   const handleSendMessage = async () => {
-    if (!inputText.trim() || !aiCoach) return;
+    if (!inputText.trim() || !aiCoach || !currentChatSession) return;
     
-    const userMessage: Message = {
-      id: Date.now().toString(),
-      type: 'user',
-      content: inputText.trim(),
-      timestamp: new Date()
-    };
-    
-    setMessages(prev => [...prev, userMessage]);
+    const userMessageContent = inputText.trim();
     setInputText('');
     setIsTyping(true);
+    
+    // 添加用户消息到全局状态
+    addChatMessage({
+      type: 'user',
+      content: userMessageContent,
+      timestamp: new Date(),
+      coachId: aiCoach.id
+    });
     
     try {
       let aiResponseContent = '';
       
       if (fitnessCoachAI && deepSeekEnabled) {
         // 使用 DeepSeek API 生成回复
-        aiResponseContent = await fitnessCoachAI.getResponse(userMessage.content, conversationHistory);
-        
-        // 更新对话历史
-        setConversationHistory(prev => [
-          ...prev,
-          { role: 'user', content: userMessage.content },
-          { role: 'assistant', content: aiResponseContent }
-        ]);
+        aiResponseContent = await fitnessCoachAI.getResponse(userMessageContent, conversationHistory);
       } else {
         // 降级到本地生成的回复
-        aiResponseContent = generateAIResponse(userMessage.content);
+        aiResponseContent = generateAIResponse(userMessageContent);
       }
       
-      const aiResponse: Message = {
-        id: (Date.now() + 1).toString(),
+      // 添加 AI 回复到全局状态
+      addChatMessage({
         type: 'coach',
         content: aiResponseContent,
-        timestamp: new Date()
-      };
-      
-      setMessages(prev => [...prev, aiResponse]);
+        timestamp: new Date(),
+        coachId: aiCoach.id
+      });
     } catch (error) {
       console.error('获取AI回复失败:', error);
       
       // 错误时使用本地生成的回复
-      const aiResponse: Message = {
-        id: (Date.now() + 1).toString(),
+      addChatMessage({
         type: 'coach',
-        content: generateAIResponse(userMessage.content),
-        timestamp: new Date()
-      };
-      
-      setMessages(prev => [...prev, aiResponse]);
+        content: generateAIResponse(userMessageContent),
+        timestamp: new Date(),
+        coachId: aiCoach.id
+      });
     } finally {
       setIsTyping(false);
     }
@@ -261,21 +390,20 @@ const AICoach: React.FC = () => {
               </button>
               
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full overflow-hidden bg-gray-200">
-                  <img 
-                    src={aiCoach.avatar} 
-                    alt={aiCoach.name}
-                    className="w-full h-full object-cover"
-                    onError={(e) => {
-                      const target = e.target as HTMLImageElement;
-                      target.style.display = 'none';
-                      target.parentElement!.innerHTML = `<div class="w-full h-full bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold">${aiCoach.name.charAt(0)}</div>`;
-                    }}
-                  />
+                <div className="w-10 h-10 rounded-full overflow-hidden bg-gradient-to-br from-purple-400 to-pink-400 flex items-center justify-center text-white font-bold">
+                  {coachAvatar ? (
+                    <img 
+                      src={coachAvatar} 
+                      alt={coachName}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    coachName.charAt(0)
+                  )}
                 </div>
                 
                 <div>
-                  <h1 className="text-lg font-bold text-gray-900">{aiCoach.name}</h1>
+                  <h1 className="text-lg font-bold text-gray-900">{coachName}</h1>
                   <p className="text-sm text-gray-600">
                     {aiCoach.personality === 'strict' ? '严格型教练' : 
                      aiCoach.personality === 'gentle' ? '温和型教练' : '幽默型教练'}
@@ -323,14 +451,21 @@ const AICoach: React.FC = () => {
             </div>
           </div>
         ) : (
-          <div className="mb-4 bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-lg p-4">
+          <div className="mb-4 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4">
             <div className="flex items-start gap-3">
-              <Sparkles className="w-5 h-5 text-amber-500 mt-0.5" />
+              <Sparkles className="w-5 h-5 text-blue-500 mt-0.5" />
               <div className="flex-1">
-                <h3 className="text-sm font-medium text-amber-900 mb-1">AI 功能初始化中</h3>
-                <p className="text-sm text-amber-700 mb-2">
-                  正在连接 DeepSeek AI 服务，请稍候...
+                <h3 className="text-sm font-medium text-blue-900 mb-1">AI 增强功能</h3>
+                <p className="text-sm text-blue-700 mb-3">
+                  启用 DeepSeek AI 获得更智能的个性化健身指导
                 </p>
+                <button
+                  onClick={() => navigate('/ai-coach/settings')}
+                  className="inline-flex items-center gap-2 bg-blue-600 text-white px-3 py-1.5 rounded-md text-sm hover:bg-blue-700 transition-colors"
+                >
+                  <Settings className="w-4 h-4" />
+                  启用 AI 功能
+                </button>
               </div>
             </div>
           </div>
@@ -347,7 +482,7 @@ const AICoach: React.FC = () => {
                 {message.type === 'coach' && (
                   <div className="flex items-center gap-2 mb-2">
                     <Sparkles className="w-4 h-4 text-purple-500" />
-                    <span className="text-sm font-medium text-purple-600">{aiCoach.name}</span>
+                    <span className="text-sm font-medium text-purple-600">{coachName}</span>
                   </div>
                 )}
                 
@@ -357,7 +492,7 @@ const AICoach: React.FC = () => {
                   <span className={`text-xs ${
                     message.type === 'user' ? 'text-blue-100' : 'text-gray-500'
                   }`}>
-                    {message.timestamp.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}
+                    {new Date(message.timestamp).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}
                   </span>
                   
                   {message.type === 'coach' && aiCoach.config.voiceEnabled && (
@@ -375,7 +510,7 @@ const AICoach: React.FC = () => {
               <div className="bg-white border border-gray-200 rounded-2xl px-4 py-3">
                 <div className="flex items-center gap-2">
                   <Sparkles className="w-4 h-4 text-purple-500" />
-                  <span className="text-sm font-medium text-purple-600">{aiCoach.name}</span>
+                  <span className="text-sm font-medium text-purple-600">{coachName}</span>
                 </div>
                 <div className="flex items-center gap-1 mt-2">
                   <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />

@@ -52,7 +52,7 @@ export interface CheckInRecord {
 }
 
 // 模拟数据存储
-let mockData = {
+const mockData = {
   users: [] as User[],
   checkIns: [] as CheckInRecord[],
   contracts: [] as any[],

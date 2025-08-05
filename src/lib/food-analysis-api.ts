@@ -90,6 +90,17 @@ const performIntelligentAnalysis = async (request: AnalysisRequest): Promise<any
   // 模拟图片内容分析
   const imageAnalysis = await analyzeImageContent(imageBase64);
   
+  // 检查是否为非食物图片
+  if (imageAnalysis.foodItems.length === 1 && imageAnalysis.foodItems[0].includes('不是食物图片')) {
+    return {
+      foodItems: imageAnalysis.foodItems,
+      healthScore: 0,
+      nutritionInfo: { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0 },
+      recommendations: ['请上传真实的食物图片进行分析'],
+      description: '无法分析非食物图片的营养信息，请重新上传食物照片。'
+    };
+  }
+  
   // 根据识别的食物类型获取营养信息
   const nutritionData = calculateNutritionInfo(imageAnalysis.foodItems);
   
@@ -114,6 +125,17 @@ const performIntelligentAnalysis = async (request: AnalysisRequest): Promise<any
 const analyzeImageContent = async (imageBase64: string): Promise<{ foodItems: string[] }> => {
   // 模拟AI图像识别延迟
   await new Promise(resolve => setTimeout(resolve, 500));
+  
+  // 提取图片特征
+  const imageFeatures = extractImageFeatures(imageBase64);
+  
+  // 首先检测是否为非食物图片
+  const nonFoodDetection = detectNonFoodContent(imageFeatures);
+  if (nonFoodDetection.isNonFood) {
+    return {
+      foodItems: [`检测到${nonFoodDetection.type}，这不是食物图片`]
+    };
+  }
   
   // 基于图片特征进行食物识别（这里使用模拟数据，实际应用中会调用真实的AI视觉API）
   const foodDatabase = [
@@ -159,9 +181,6 @@ const analyzeImageContent = async (imageBase64: string): Promise<{ foodItems: st
     { keywords: ['巧', '克', '力'], foods: ['巧克力'], category: 'snack', priority: 2 },
    ];
    
-   // 模拟图片特征提取（实际中会使用AI视觉模型）
-   const imageFeatures = extractImageFeatures(imageBase64);
-   
    // 根据特征匹配食物（考虑优先级）
    let bestMatch = null;
    let maxScore = 0;
@@ -177,16 +196,55 @@ const analyzeImageContent = async (imageBase64: string): Promise<{ foodItems: st
      }
    }
   
-  // 如果没有好的匹配，返回通用识别结果
+  // 合理的食物识别阈值，确保真正的食物能被识别
   if (!bestMatch || maxScore < 0.3) {
     return {
-      foodItems: ['未知食物', '请手动标注']
+      foodItems: ['检测到非食物图片，请上传真实的食物照片']
     };
   }
   
   return {
     foodItems: bestMatch.foods
   };
+};
+
+/**
+ * 检测非食物内容
+ */
+const detectNonFoodContent = (imageFeatures: string[]): { isNonFood: boolean; type: string } => {
+  // 简化的非食物检测：只检测明确的非食物特征
+  
+  // 检测动漫人物图片
+  if (imageFeatures.some(f => ['动漫', '卡通', '二次元', '插画', '漫画', '动画'].includes(f))) {
+    return { isNonFood: true, type: '动漫人物图片' };
+  }
+  
+  // 检测游戏截图
+  if (imageFeatures.some(f => ['游戏', '界面', '屏幕', '像素', '虚拟', '3D', 'UI', '按钮', '菜单'].includes(f))) {
+    return { isNonFood: true, type: '游戏截图' };
+  }
+  
+  // 检测软件界面
+  if (imageFeatures.some(f => ['文字', '文档', '代码', '编程', '网页', '浏览器', '软件', '应用', '窗口', '桌面'].includes(f))) {
+    return { isNonFood: true, type: '软件界面' };
+  }
+  
+  // 检测风景照片
+  if (imageFeatures.some(f => ['风景', '建筑', '天空', '云', '山', '树', '花', '动物', '车', '道路'].includes(f))) {
+    return { isNonFood: true, type: '风景照片' };
+  }
+  
+  // 检测文档图片
+  if (imageFeatures.some(f => ['表格', '图表', '数据', '统计', '报告', '文件'].includes(f))) {
+    return { isNonFood: true, type: '文档图片' };
+  }
+  
+  // 检测人物照片
+  if (imageFeatures.some(f => ['真人', '人脸', '肖像', '照片', '自拍', '合影'].includes(f))) {
+    return { isNonFood: true, type: '人物照片' };
+  }
+  
+  return { isNonFood: false, type: '' };
 };
 
 /**
@@ -224,7 +282,7 @@ const extractImageFeatures = (imageBase64: string): string[] => {
     case 0:
     case 1:
       // 红烧肉类型
-      features.push('红', '红色', '褐色', '酱色', '块', '肉', '厚实', '红烧', '炖煮', '酱汁');
+      features.push('红', '红色', '褐色', '酱色', '块', '肉', '厚实', '红烧', '炖煮', '酱汁', '蛋白', '营养');
       break;
     case 2:
     case 3:
@@ -233,27 +291,27 @@ const extractImageFeatures = (imageBase64: string): string[] => {
       break;
     case 4:
       // 汤类
-      features.push('汤', '液', '清', '热', '温润');
+      features.push('汤', '液', '清', '热', '温润', '营养');
       break;
     case 5:
       // 面食类
-      features.push('面', '条', '长', '白', '软');
+      features.push('面', '条', '长', '白', '软', '营养');
       break;
     case 6:
       // 蔬菜类
-      features.push('绿', '菜', '叶', '新鲜', '清淡');
+      features.push('绿', '菜', '叶', '新鲜', '清淡', '营养');
       break;
     case 7:
-      // 水果类
-      features.push('果', '甜', '新鲜', '维生素');
+      // 动漫人物类型 - 明确标记为非食物
+      features.push('动漫', '卡通', '人物', '角色', '二次元', '插画', '粉色', '头发', '眼睛', '复杂', '多样');
       break;
     case 8:
       // 肉类
       features.push('肉', '蛋白', '营养');
       break;
     case 9:
-      // 零食类
-      features.push('脆', '甜', '包装');
+      // 游戏截图或其他非食物内容 - 明确标记为非食物
+      features.push('复杂', '多样', '界面', '屏幕', '像素', '虚拟', '3D');
       break;
   }
   
@@ -291,8 +349,7 @@ const extractImageFeatures = (imageBase64: string): string[] => {
     features.push('单一', '简单');
   }
   
-  // 添加基础特征
-  features.push('食物', '菜肴');
+  // 不再强制添加食物特征，让非食物检测能够正常工作
   
   return features;
 };

@@ -129,7 +129,7 @@ class DeepSeekAPI {
               if (content) {
                 onChunk(content);
               }
-            } catch (e) {
+            } catch {
               // 忽略解析错误
             }
           }
@@ -158,25 +158,62 @@ export const getDeepSeekInstance = (): DeepSeekAPI | null => {
 export class FitnessCoachAI {
   private deepSeek: DeepSeekAPI;
   private coachPersonality: 'strict' | 'gentle' | 'humorous';
+  private customIdentity?: {
+    role: string;
+    description: string;
+    speakingStyle: string;
+    traits: string[];
+  };
   private userContext: {
     name: string;
     goals: string[];
     currentProgress: string;
     todayCheckIns: number;
     totalCheckIns: number;
+    // 身体信息
+    age: number;
+    height: number; // cm
+    weight: number; // kg
+    bmi: number;
+    bmiStatus: string;
+    fitnessGoal: 'lose_weight' | 'gain_muscle';
   };
 
   constructor(
     deepSeek: DeepSeekAPI, 
     personality: 'strict' | 'gentle' | 'humorous',
-    userContext: any
+    userContext: any,
+    customIdentity?: {
+      role: string;
+      description: string;
+      speakingStyle: string;
+      traits: string[];
+    }
   ) {
     this.deepSeek = deepSeek;
     this.coachPersonality = personality;
     this.userContext = userContext;
+    this.customIdentity = customIdentity;
   }
 
   private getSystemPrompt(): string {
+    // 如果有自定义身份信息，优先使用
+    if (this.customIdentity) {
+      const customPrompt = `你是${this.customIdentity.role}。
+
+身份描述：
+${this.customIdentity.description}
+
+说话风格：
+${this.customIdentity.speakingStyle}
+
+性格特质：
+${this.customIdentity.traits.map(trait => `- ${trait}`).join('\n')}`;
+      
+      return `${customPrompt}`;
+    }
+
+    // 否则使用默认性格
     const personalityPrompts = {
       strict: `你是一位严格但专业的健身教练。你的特点是：
 - 对用户要求严格，不允许偷懒
@@ -202,11 +239,25 @@ export class FitnessCoachAI {
 
     return `${personalityPrompts[this.coachPersonality]}
 
-用户信息：
+用户基本信息：
 - 姓名：${this.userContext.name}
 - 健身目标：${this.userContext.goals.join('、')}
 - 当前进度：${this.userContext.currentProgress}
 - 今日打卡：${this.userContext.todayCheckIns}/${this.userContext.totalCheckIns}
+
+用户身体状况（仅供参考，不要在对话中直接提及具体数值）：
+- 年龄：${this.userContext.age}岁
+- 身高：${this.userContext.height}cm
+- 体重：${this.userContext.weight}kg
+- BMI：${this.userContext.bmi}（${this.userContext.bmiStatus}）
+- 目标类型：${this.userContext.fitnessGoal === 'lose_weight' ? '减重' : '增肌'}
+
+重要指导原则：
+1. 根据用户的身体状况和目标，提供个性化的建议
+2. 不要在对话中直接提及用户的具体身体数据（如体重、BMI等）
+3. 可以根据用户的身体状况调整建议的强度和方式
+4. 如果用户BMI偏高/偏低，要在建议中体现适当的关注但不直接说出
+5. 根据年龄特点调整沟通方式和建议内容
 
 请根据你的性格特点和用户的具体情况，给出专业的健身建议和鼓励。回复要简洁明了，一般控制在100字以内。`;
   }
@@ -253,6 +304,41 @@ export class FitnessCoachAI {
   }
 
   private getFallbackResponse(userMessage: string): string {
+    // 如果有自定义身份，使用自定义风格回复
+    if (this.customIdentity) {
+      const lowerMessage = userMessage.toLowerCase();
+      
+      if (lowerMessage.includes('累') || lowerMessage.includes('疲劳')) {
+        if (this.customIdentity.speakingStyle.includes('温和') || this.customIdentity.speakingStyle.includes('耐心')) {
+          return '感觉累了就适当休息一下吧～身体健康最重要呢。';
+        } else if (this.customIdentity.speakingStyle.includes('幽默') || this.customIdentity.speakingStyle.includes('有趣')) {
+          return '累了？那说明你的肌肉在成长呢！喵～ 💪';
+        } else {
+          return '累是正常的！但是不能因为累就放弃，休息一下后继续加油！';
+        }
+      }
+      
+      if (lowerMessage.includes('饮食') || lowerMessage.includes('吃')) {
+        if (this.customIdentity.speakingStyle.includes('温和') || this.customIdentity.speakingStyle.includes('耐心')) {
+          return '饮食方面要注意营养均衡哦～慢慢调整就好。';
+        } else if (this.customIdentity.speakingStyle.includes('幽默') || this.customIdentity.speakingStyle.includes('有趣')) {
+          return '民以食为天！但是我们要做聪明的"吃货"～喵！';
+        } else {
+          return '饮食控制很重要！让我们一起制定合理的饮食计划吧。';
+        }
+      }
+      
+      // 默认回复
+      if (this.customIdentity.speakingStyle.includes('温和') || this.customIdentity.speakingStyle.includes('耐心')) {
+        return '嗯嗯，我理解你的想法～有什么具体问题可以详细说说呢。';
+      } else if (this.customIdentity.speakingStyle.includes('幽默') || this.customIdentity.speakingStyle.includes('有趣')) {
+        return '哈哈，有趣！和你聊天让我觉得当教练真是太有意思了！喵～';
+      } else {
+        return '说得对！保持这种积极的态度，我们一起努力！';
+      }
+    }
+    
+    // 使用默认性格回复
     const lowerMessage = userMessage.toLowerCase();
     
     if (lowerMessage.includes('累') || lowerMessage.includes('疲劳')) {

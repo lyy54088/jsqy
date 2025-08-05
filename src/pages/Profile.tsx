@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, User, Phone, Target, Calendar, Trophy, Settings, LogOut, Edit3, Save, X, Database, Camera, Upload } from 'lucide-react';
+import { ArrowLeft, Phone, Target, Calendar, Settings, LogOut, Edit3, Save, X, Camera, Upload } from 'lucide-react';
 import { useAppStore } from '@/store';
+import { getSafeImageUrl } from '@/lib/image-proxy';
 
 const Profile: React.FC = () => {
   const navigate = useNavigate();
@@ -42,7 +43,6 @@ const Profile: React.FC = () => {
   const approvedCheckIns = checkInHistory.filter(c => c.status === 'approved').length;
   const completedContracts = contractHistory.filter(c => c.status === 'completed').length;
   const totalContractDays = contractHistory.reduce((sum, contract) => {
-    const days = Math.ceil((new Date(contract.endDate).getTime() - new Date(contract.startDate).getTime()) / (1000 * 60 * 60 * 24));
     return sum + contract.completedDays;
   }, 0);
 
@@ -180,7 +180,7 @@ const Profile: React.FC = () => {
               >
                 {avatarPreview || user?.avatar ? (
                   <img 
-                    src={avatarPreview || user?.avatar} 
+                    src={avatarPreview || getSafeImageUrl(user?.avatar, user.nickname)} 
                     alt="头像" 
                     className="w-full h-full object-cover"
                   />
@@ -448,31 +448,7 @@ const Profile: React.FC = () => {
             </div>
           </button>
           
-          <button 
-            onClick={() => navigate('/food-analysis')}
-            className="w-full flex items-center gap-3 px-6 py-4 hover:bg-gray-50 transition-colors border-b border-gray-100"
-          >
-            <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center">
-              <Camera className="w-5 h-5 text-orange-600" />
-            </div>
-            <div className="flex-1 text-left">
-              <p className="font-medium text-gray-900">食物分析</p>
-              <p className="text-sm text-gray-600">AI智能识别食物营养成分</p>
-            </div>
-          </button>
-          
-          <button 
-            onClick={() => navigate('/database-test')}
-            className="w-full flex items-center gap-3 px-6 py-4 hover:bg-gray-50 transition-colors border-b border-gray-100"
-          >
-            <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
-              <Database className="w-5 h-5 text-green-600" />
-            </div>
-            <div className="flex-1 text-left">
-              <p className="font-medium text-gray-900">数据库测试</p>
-              <p className="text-sm text-gray-600">测试MongoDB连接状态</p>
-            </div>
-          </button>
+
           
           <button 
             onClick={handleLogout}
