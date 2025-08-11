@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>应用状态测试</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .status {
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .warning {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+        }
+        .error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        pre {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 5px;
+            overflow-x: auto;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .link-button {
+            display: inline-block;
+            background: #28a745;
+            color: white;
+            text-decoration: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            margin: 10px 5px;
+        }
+        .link-button:hover {
+            background: #218838;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 健身教练应用状态检测</h1>
+        
+        <div id="status-container">
+            <div class="status success">
+                <strong>✅ 检测完成</strong> - 正在分析应用状态...
+            </div>
+        </div>
+        
+        <h3>当前localStorage状态：</h3>
+        <pre id="storage-data">正在检查...</pre>
+        
+        <h3>快速操作：</h3>
+        <button onclick="checkStatus()">🔄 重新检测</button>
+        <button onclick="clearAll()">🧹 清理所有数据</button>
+        
+        <h3>访问应用：</h3>
+        <a href="http://localhost:5175" class="link-button" target="_blank">🚀 打开健身教练应用</a>
+        <a href="http://localhost:5175/auth" class="link-button" target="_blank">👤 直接访问登录页</a>
+        
+        <div id="recommendations"></div>
+    </div>
+
+    <script>
+        function checkStatus() {
+            const statusContainer = document.getElementById('status-container');
+            const storageData = document.getElementById('storage-data');
+            const recommendations = document.getElementById('recommendations');
+            
+            // 检查localStorage
+            const allData = {};
+            let hasProblems = false;
+            let problemDetails = [];
+            
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                try {
+                    const value = localStorage.getItem(key);
+                    allData[key] = JSON.parse(value);
+                } catch (e) {
+                    allData[key] = value;
+                }
+            }
+            
+            storageData.textContent = JSON.stringify(allData, null, 2);
+            
+            // 检查健身应用数据
+            const fitnessData = localStorage.getItem('fitness-contract-storage');
+            
+            if (!fitnessData) {
+                statusContainer.innerHTML = `
+                    <div class="status success">
+                        <strong>✅ 状态正常</strong> - 没有找到任何健身应用数据，这是正确的初始状态。
+                    </div>
+                `;
+                recommendations.innerHTML = `
+                    <div class="status success">
+                        <h4>✅ 推荐操作：</h4>
+                        <p>1. 点击上方"打开健身教练应用"链接</p>
+                        <p>2. 应该看到登录/注册界面，而不是500元保证金</p>
+                        <p>3. 如果仍然看到500元保证金，请刷新页面或清理浏览器缓存</p>
+                    </div>
+                `;
+            } else {
+                try {
+                    const parsed = JSON.parse(fitnessData);
+                    const state = parsed.state;
+                    
+                    // 检查各种问题
+                    if (state?.currentContract && 
+                        (state.currentContract.amount === 500 || state.currentContract.remainingAmount === 500)) {
+                        hasProblems = true;
+                        problemDetails.push('发现500元保证金数据');
+                    }
+                    
+                    if (!state?.user && state?.currentContract) {
+                        hasProblems = true;
+                        problemDetails.push('有契约但没有用户');
+                    }
+                    
+                    if (hasProblems) {
+                        statusContainer.innerHTML = `
+                            <div class="status error">
+                                <strong>❌ 发现问题</strong> - ${problemDetails.join(', ')}
+                            </div>
+                        `;
+                        recommendations.innerHTML = `
+                            <div class="status warning">
+                                <h4>⚠️ 需要清理数据：</h4>
+                                <p>点击"清理所有数据"按钮，然后重新访问应用</p>
+                            </div>
+                        `;
+                    } else {
+                        statusContainer.innerHTML = `
+                            <div class="status success">
+                                <strong>✅ 数据正常</strong> - 健身应用数据结构正确
+                            </div>
+                        `;
+                    }
+                } catch (e) {
+                    statusContainer.innerHTML = `
+                        <div class="status error">
+                            <strong>❌ 数据损坏</strong> - localStorage数据格式错误
+                        </div>
+                    `;
+                    recommendations.innerHTML = `
+                        <div class="status warning">
+                            <h4>⚠️ 需要清理数据：</h4>
+                            <p>数据已损坏，建议清理后重新开始</p>
+                        </div>
+                    `;
+                }
+            }
+        }
+        
+        function clearAll() {
+            if (confirm('确定要清理所有数据吗？')) {
+                localStorage.clear();
+                sessionStorage.clear();
+                alert('数据已清理！请重新检测状态。');
+                checkStatus();
+            }
+        }
+        
+        // 页面加载时自动检测
+        window.onload = checkStatus;
+        
+        // 每5秒自动检测一次
+        setInterval(checkStatus, 5000);
+    </script>
+</body>
+</html>

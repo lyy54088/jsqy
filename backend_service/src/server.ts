@@ -4,6 +4,8 @@ import helmet from 'helmet';
 import morgan from 'morgan';
 import compression from 'compression';
 import dotenv from 'dotenv';
+import visionRoutes from './routes/vision';
+import communityRoutes from './routes/community';
 
 // 加载环境变量
 dotenv.config();
@@ -16,8 +18,8 @@ app.use(helmet());
 
 // CORS 配置
 app.use(cors({
-  origin: process.env['CORS_ORIGIN'] || 'http://localhost:5173',
-  credentials: process.env['CORS_CREDENTIALS'] === 'true'
+  origin: process.env['CORS_ORIGIN'] || ['http://localhost:5173', 'http://localhost:5174'],
+  credentials: true
 }));
 
 // 压缩响应
@@ -44,6 +46,12 @@ app.get('/health', (_req, res) => {
 app.get('/api/test', (_req, res) => {
   res.json({ message: '后端服务器运行正常！', timestamp: new Date().toISOString() });
 });
+
+// Vision API路由
+app.use('/api/vision', visionRoutes);
+
+// Community API路由
+app.use('/api/communities', communityRoutes);
 
 // 404 处理
 app.use('*', (req, res) => {

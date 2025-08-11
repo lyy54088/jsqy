@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>训练计划调试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .debug-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .debug-title {
+            color: #333;
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+        }
+        .data-display {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 4px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            overflow-x: auto;
+        }
+        .current-day {
+            background: #e7f3ff;
+            padding: 10px;
+            border-left: 4px solid #007bff;
+            margin: 10px 0;
+        }
+        .workout-status {
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .workout-day { background: #d4edda; border-left: 4px solid #28a745; }
+        .rest-day { background: #f8d7da; border-left: 4px solid #dc3545; }
+        .recovery-day { background: #fff3cd; border-left: 4px solid #ffc107; }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <h1>训练计划调试工具</h1>
+    
+    <div class="debug-section">
+        <h2 class="debug-title">当前时间信息</h2>
+        <div id="timeInfo" class="data-display"></div>
+    </div>
+
+    <div class="debug-section">
+        <h2 class="debug-title">用户数据</h2>
+        <div id="userData" class="data-display"></div>
+    </div>
+
+    <div class="debug-section">
+        <h2 class="debug-title">当前契约</h2>
+        <div id="contractData" class="data-display"></div>
+    </div>
+
+    <div class="debug-section">
+        <h2 class="debug-title">训练计划分析</h2>
+        <div id="workoutAnalysis" class="data-display"></div>
+    </div>
+
+    <div class="debug-section">
+        <h2 class="debug-title">今日打卡状态</h2>
+        <div id="checkinStatus" class="data-display"></div>
+    </div>
+
+    <div class="debug-section">
+        <h2 class="debug-title">操作</h2>
+        <button onclick="refreshData()">刷新数据</button>
+        <button onclick="clearAllData()">清除所有数据</button>
+        <button onclick="setMondayWorkout()">设置周一为训练日</button>
+        <button onclick="goToDashboard()">返回主页</button>
+    </div>
+
+    <script>
+        function refreshData() {
+            displayTimeInfo();
+            displayUserData();
+            displayContractData();
+            displayWorkoutAnalysis();
+            displayCheckinStatus();
+        }
+
+        function displayTimeInfo() {
+            const now = new Date();
+            const dayOfWeek = now.getDay(); // 0=周日, 1=周一, ..., 6=周六
+            const dayNames = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
+            const dayMapping = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+            
+            const timeInfo = {
+                当前时间: now.toLocaleString('zh-CN'),
+                星期几数字: dayOfWeek,
+                星期几中文: dayNames[dayOfWeek],
+                星期几英文ID: dayMapping[dayOfWeek],
+                是否周一: dayOfWeek === 1
+            };
+            
+            document.getElementById('timeInfo').textContent = JSON.stringify(timeInfo, null, 2);
+        }
+
+        function displayUserData() {
+            const userData = localStorage.getItem('app-store');
+            if (userData) {
+                try {
+                    const parsed = JSON.parse(userData);
+                    document.getElementById('userData').textContent = JSON.stringify({
+                        用户: parsed.state?.user || null,
+                        是否登录: parsed.state?.isLoggedIn || false
+                    }, null, 2);
+                } catch (e) {
+                    document.getElementById('userData').textContent = '解析用户数据失败: ' + e.message;
+                }
+            } else {
+                document.getElementById('userData').textContent = '没有找到用户数据';
+            }
+        }
+
+        function displayContractData() {
+            const userData = localStorage.getItem('app-store');
+            if (userData) {
+                try {
+                    const parsed = JSON.parse(userData);
+                    const contract = parsed.state?.currentContract;
+                    document.getElementById('contractData').textContent = JSON.stringify({
+                        当前契约: contract || null,
+                        训练计划: contract?.workoutPlan || null
+                    }, null, 2);
+                } catch (e) {
+                    document.getElementById('contractData').textContent = '解析契约数据失败: ' + e.message;
+                }
+            } else {
+                document.getElementById('contractData').textContent = '没有找到契约数据';
+            }
+        }
+
+        function displayWorkoutAnalysis() {
+            const userData = localStorage.getItem('app-store');
+            const now = new Date();
+            const dayOfWeek = now.getDay();
+            const dayMapping = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+            const todayDayId = dayMapping[dayOfWeek];
+            
+            let analysis = {
+                今日是: todayDayId,
+                默认训练日: ['monday', 'tuesday', 'thursday', 'friday']
+            };
+
+            if (userData) {
+                try {
+                    const parsed = JSON.parse(userData);
+                    const contract = parsed.state?.currentContract;
+                    const workoutPlan = contract?.workoutPlan;
+                    
+                    if (workoutPlan) {
+                        analysis.用户选择的训练日 = workoutPlan.selectedDays;
+                        analysis.今日是否为训练日 = workoutPlan.selectedDays.includes(todayDayId);
+                        analysis.每周训练天数 = workoutPlan.weeklyWorkoutDays;
+                    } else {
+                        analysis.用户选择的训练日 = '未设置，使用默认';
+                        analysis.今日是否为训练日 = ['monday', 'tuesday', 'thursday', 'friday'].includes(todayDayId);
+                    }
+                } catch (e) {
+                    analysis.错误 = '解析数据失败: ' + e.message;
+                }
+            }
+            
+            document.getElementById('workoutAnalysis').textContent = JSON.stringify(analysis, null, 2);
+        }
+
+        function displayCheckinStatus() {
+            const userData = localStorage.getItem('app-store');
+            if (userData) {
+                try {
+                    const parsed = JSON.parse(userData);
+                    const todayCheckIns = parsed.state?.todayCheckIns || [];
+                    
+                    const status = {
+                        今日打卡记录数量: todayCheckIns.length,
+                        打卡记录: todayCheckIns.map(c => ({
+                            类型: c.type,
+                            状态: c.status,
+                            时间: c.timestamp
+                        }))
+                    };
+                    
+                    document.getElementById('checkinStatus').textContent = JSON.stringify(status, null, 2);
+                } catch (e) {
+                    document.getElementById('checkinStatus').textContent = '解析打卡数据失败: ' + e.message;
+                }
+            } else {
+                document.getElementById('checkinStatus').textContent = '没有找到打卡数据';
+            }
+        }
+
+        function clearAllData() {
+            if (confirm('确定要清除所有数据吗？')) {
+                localStorage.clear();
+                alert('所有数据已清除');
+                refreshData();
+            }
+        }
+
+        function setMondayWorkout() {
+            const userData = localStorage.getItem('app-store');
+            if (userData) {
+                try {
+                    const parsed = JSON.parse(userData);
+                    if (parsed.state?.currentContract) {
+                        // 确保周一在训练日列表中
+                        const selectedDays = ['monday', 'tuesday', 'thursday', 'friday'];
+                        parsed.state.currentContract.workoutPlan = {
+                            planId: 'default-plan',
+                            intensity: 'medium',
+                            goal: 'fitness',
+                            selectedDays: selectedDays,
+                            weeklyWorkoutDays: selectedDays.length
+                        };
+                        
+                        localStorage.setItem('app-store', JSON.stringify(parsed));
+                        alert('已设置周一为训练日');
+                        refreshData();
+                    } else {
+                        alert('没有找到当前契约');
+                    }
+                } catch (e) {
+                    alert('设置失败: ' + e.message);
+                }
+            } else {
+                alert('没有找到用户数据');
+            }
+        }
+
+        function goToDashboard() {
+            window.location.href = 'http://localhost:5173/';
+        }
+
+        // 页面加载时刷新数据
+        refreshData();
+        
+        // 每5秒自动刷新
+        setInterval(refreshData, 5000);
+    </script>
+</body>
+</html>

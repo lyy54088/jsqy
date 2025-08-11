@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>语音功能测试</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .test-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+        }
+        .test-section h3 {
+            margin-top: 0;
+            color: #555;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .recording {
+            background: #dc3545 !important;
+        }
+        textarea {
+            width: 100%;
+            height: 100px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            resize: vertical;
+        }
+        .status {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎤 语音功能测试</h1>
+        
+        <!-- TTS 测试 -->
+        <div class="test-section">
+            <h3>🔊 语音播放测试 (TTS)</h3>
+            <textarea id="ttsText" placeholder="输入要播放的文字...">嗨测试用户！我是你的专属教练小美教练！有什么想聊的吗？我可是很有趣的教练哦～</textarea>
+            <br>
+            <button onclick="testTTS()">播放语音</button>
+            <button onclick="stopTTS()">停止播放</button>
+            <div id="ttsStatus"></div>
+        </div>
+        
+        <!-- 语音识别测试 -->
+        <div class="test-section">
+            <h3>🎙️ 语音识别测试 (STT)</h3>
+            <button id="sttButton" onclick="testSTT()">开始语音识别</button>
+            <textarea id="sttResult" placeholder="识别结果将显示在这里..." readonly></textarea>
+            <div id="sttStatus"></div>
+        </div>
+        
+        <!-- 浏览器兼容性检查 -->
+        <div class="test-section">
+            <h3>🔧 浏览器兼容性检查</h3>
+            <button onclick="checkCompatibility()">检查兼容性</button>
+            <div id="compatibilityResult"></div>
+        </div>
+    </div>
+
+    <script>
+        let recognition = null;
+        let isListening = false;
+
+        // TTS 测试
+        function testTTS() {
+            const text = document.getElementById('ttsText').value;
+            const status = document.getElementById('ttsStatus');
+            
+            if (!text.trim()) {
+                showStatus('ttsStatus', '请输入要播放的文字', 'error');
+                return;
+            }
+            
+            // 停止当前播放
+            window.speechSynthesis.cancel();
+            
+            // 创建语音合成实例
+            const utterance = new SpeechSynthesisUtterance(text);
+            
+            // 设置语音参数
+            utterance.rate = 0.9;
+            utterance.pitch = 1.1;
+            utterance.volume = 0.8;
+            
+            // 尝试使用中文语音
+            const voices = window.speechSynthesis.getVoices();
+            const chineseVoice = voices.find(voice => 
+                voice.lang.includes('zh') || voice.name.includes('Chinese')
+            );
+            if (chineseVoice) {
+                utterance.voice = chineseVoice;
+                showStatus('ttsStatus', `使用语音: ${chineseVoice.name}`, 'info');
+            } else {
+                showStatus('ttsStatus', '使用默认语音（可能不支持中文）', 'info');
+            }
+            
+            utterance.onstart = () => {
+                showStatus('ttsStatus', '正在播放语音...', 'success');
+            };
+            
+            utterance.onend = () => {
+                showStatus('ttsStatus', '语音播放完成', 'success');
+            };
+            
+            utterance.onerror = (event) => {
+                showStatus('ttsStatus', `语音播放失败: ${event.error}`, 'error');
+            };
+            
+            // 播放语音
+            window.speechSynthesis.speak(utterance);
+        }
+
+        function stopTTS() {
+            window.speechSynthesis.cancel();
+            showStatus('ttsStatus', '语音播放已停止', 'info');
+        }
+
+        // STT 测试
+        function testSTT() {
+            const button = document.getElementById('sttButton');
+            const result = document.getElementById('sttResult');
+            
+            if (isListening) {
+                // 停止识别
+                if (recognition) {
+                    recognition.stop();
+                }
+                return;
+            }
+            
+            if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+                showStatus('sttStatus', '您的浏览器不支持语音识别功能', 'error');
+                return;
+            }
+
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            recognition = new SpeechRecognition();
+            
+            recognition.lang = 'zh-CN';
+            recognition.continuous = false;
+            recognition.interimResults = false;
+            
+            recognition.onstart = () => {
+                isListening = true;
+                button.textContent = '停止识别';
+                button.classList.add('recording');
+                showStatus('sttStatus', '正在监听，请说话...', 'info');
+            };
+            
+            recognition.onresult = (event) => {
+                const transcript = event.results[0][0].transcript;
+                result.value = transcript;
+                showStatus('sttStatus', `识别成功: ${transcript}`, 'success');
+            };
+            
+            recognition.onerror = (event) => {
+                console.error('语音识别错误:', event.error);
+                if (event.error === 'no-speech') {
+                    showStatus('sttStatus', '没有检测到语音，请重试', 'error');
+                } else if (event.error === 'not-allowed') {
+                    showStatus('sttStatus', '请允许麦克风权限', 'error');
+                } else {
+                    showStatus('sttStatus', `识别失败: ${event.error}`, 'error');
+                }
+            };
+            
+            recognition.onend = () => {
+                isListening = false;
+                button.textContent = '开始语音识别';
+                button.classList.remove('recording');
+            };
+            
+            recognition.start();
+        }
+
+        // 兼容性检查
+        function checkCompatibility() {
+            const result = document.getElementById('compatibilityResult');
+            let html = '<h4>检查结果:</h4><ul>';
+            
+            // 检查 TTS
+            if ('speechSynthesis' in window) {
+                html += '<li style="color: green;">✅ 支持语音合成 (TTS)</li>';
+                
+                // 检查可用语音
+                const voices = window.speechSynthesis.getVoices();
+                const chineseVoices = voices.filter(voice => 
+                    voice.lang.includes('zh') || voice.name.includes('Chinese')
+                );
+                
+                if (chineseVoices.length > 0) {
+                    html += '<li style="color: green;">✅ 支持中文语音</li>';
+                    html += '<li style="color: blue;">可用中文语音: ' + 
+                           chineseVoices.map(v => v.name).join(', ') + '</li>';
+                } else {
+                    html += '<li style="color: orange;">⚠️ 没有中文语音，将使用默认语音</li>';
+                }
+            } else {
+                html += '<li style="color: red;">❌ 不支持语音合成</li>';
+            }
+            
+            // 检查 STT
+            if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+                html += '<li style="color: green;">✅ 支持语音识别 (STT)</li>';
+            } else {
+                html += '<li style="color: red;">❌ 不支持语音识别</li>';
+            }
+            
+            // 检查浏览器
+            const userAgent = navigator.userAgent;
+            if (userAgent.includes('Chrome')) {
+                html += '<li style="color: green;">✅ Chrome 浏览器 - 完全支持</li>';
+            } else if (userAgent.includes('Edge')) {
+                html += '<li style="color: green;">✅ Edge 浏览器 - 完全支持</li>';
+            } else if (userAgent.includes('Firefox')) {
+                html += '<li style="color: orange;">⚠️ Firefox 浏览器 - 部分支持</li>';
+            } else if (userAgent.includes('Safari')) {
+                html += '<li style="color: orange;">⚠️ Safari 浏览器 - 部分支持</li>';
+            } else {
+                html += '<li style="color: red;">❌ 未知浏览器 - 可能不支持</li>';
+            }
+            
+            html += '</ul>';
+            result.innerHTML = html;
+        }
+
+        function showStatus(elementId, message, type) {
+            const element = document.getElementById(elementId);
+            element.textContent = message;
+            element.className = `status ${type}`;
+        }
+
+        // 页面加载时检查语音列表
+        window.addEventListener('load', () => {
+            // 等待语音列表加载
+            if ('speechSynthesis' in window) {
+                speechSynthesis.onvoiceschanged = () => {
+                    console.log('语音列表已加载');
+                };
+            }
+        });
+    </script>
+</body>
+</html>

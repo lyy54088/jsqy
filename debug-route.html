@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>路由调试工具</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .warning { background: #fff3cd; color: #856404; border: 1px solid #ffeaa7; }
+        .info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background: #0056b3; }
+        .log-area {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 4px;
+            max-height: 400px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        .route-test {
+            border: 1px solid #ddd;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 路由调试工具</h1>
+        <p>用于诊断 /ai-coach/setup 路由问题</p>
+
+        <div class="route-test">
+            <h3>📍 路由测试</h3>
+            <button onclick="testRoute('/ai-coach/setup')">测试 /ai-coach/setup</button>
+            <button onclick="testRoute('/setup')">测试 /setup</button>
+            <button onclick="testRoute('/auth')">测试 /auth</button>
+            <button onclick="testRoute('/dashboard')">测试 /dashboard</button>
+            <div id="route-status"></div>
+        </div>
+
+        <div class="route-test">
+            <h3>👤 用户状态检查</h3>
+            <button onclick="checkUserStatus()">检查用户状态</button>
+            <button onclick="createTestUser()">创建测试用户</button>
+            <button onclick="clearAllData()">清理所有数据</button>
+            <div id="user-status"></div>
+        </div>
+
+        <div class="route-test">
+            <h3>🔍 LocalStorage 检查</h3>
+            <button onclick="checkLocalStorage()">检查存储数据</button>
+            <button onclick="showStorageKeys()">显示所有键</button>
+            <div id="storage-status"></div>
+        </div>
+
+        <div class="log-area" id="log-area">
+            <strong>日志输出：</strong><br>
+        </div>
+    </div>
+
+    <script>
+        function log(message, type = 'info') {
+            const logArea = document.getElementById('log-area');
+            const timestamp = new Date().toLocaleTimeString();
+            const color = {
+                'info': '#0c5460',
+                'success': '#155724',
+                'error': '#721c24',
+                'warning': '#856404'
+            }[type] || '#0c5460';
+            
+            logArea.innerHTML += `<div style="color: ${color};">[${timestamp}] ${message}</div>`;
+            logArea.scrollTop = logArea.scrollHeight;
+        }
+
+        function showStatus(elementId, message, type = 'info') {
+            const element = document.getElementById(elementId);
+            element.innerHTML = `<div class="${type}">${message}</div>`;
+        }
+
+        function testRoute(path) {
+            log(`🔍 测试路由: ${path}`);
+            
+            // 检查当前应用是否运行
+            fetch('http://localhost:5173' + path)
+                .then(response => {
+                    log(`📡 HTTP状态: ${response.status} ${response.statusText}`);
+                    if (response.ok) {
+                        showStatus('route-status', `✅ 路由 ${path} 可访问`, 'success');
+                        log(`✅ 路由 ${path} 返回正常响应`);
+                    } else {
+                        showStatus('route-status', `❌ 路由 ${path} 返回 ${response.status}`, 'error');
+                        log(`❌ 路由 ${path} 返回错误状态`);
+                    }
+                })
+                .catch(error => {
+                    showStatus('route-status', `❌ 无法连接到开发服务器`, 'error');
+                    log(`❌ 网络错误: ${error.message}`, 'error');
+                });
+        }
+
+        function checkUserStatus() {
+            log('👤 检查用户登录状态...');
+            
+            try {
+                const storageData = localStorage.getItem('fitness-contract-storage');
+                if (!storageData) {
+                    showStatus('user-status', '❌ 没有找到用户数据', 'warning');
+                    log('⚠️ localStorage中没有用户数据');
+                    return;
+                }
+
+                const data = JSON.parse(storageData);
+                const user = data.state?.user;
+                const isLoggedIn = data.state?.isLoggedIn;
+
+                if (user) {
+                    showStatus('user-status', `✅ 用户已登录: ${user.nickname} (${user.phone})`, 'success');
+                    log(`✅ 用户信息: ID=${user.id}, 昵称=${user.nickname}, 登录状态=${isLoggedIn}`);
+                } else {
+                    showStatus('user-status', '❌ 用户未登录', 'warning');
+                    log('⚠️ 用户数据为空，需要登录');
+                }
+            } catch (error) {
+                showStatus('user-status', '❌ 数据解析错误', 'error');
+                log(`❌ 解析用户数据时出错: ${error.message}`, 'error');
+            }
+        }
+
+        function createTestUser() {
+            log('🔧 创建测试用户...');
+            
+            const testUser = {
+                id: 'test-user-' + Date.now(),
+                phone: '13800138000',
+                nickname: '测试用户',
+                age: 25,
+                height: 170,
+                weight: 65,
+                fitnessGoal: 'build_muscle',
+                createdAt: new Date().toISOString()
+            };
+
+            const storageData = {
+                state: {
+                    user: testUser,
+                    isLoggedIn: true,
+                    aiCoach: null,
+                    currentContract: null,
+                    contractHistory: [],
+                    checkInHistory: [],
+                    currentChatSession: null,
+                    chatHistory: [],
+                    notificationSettings: {
+                        enabled: true,
+                        frequency: 'medium',
+                        quietHours: { start: '22:00', end: '08:00' },
+                        types: {
+                            checkInReminder: true,
+                            checkinReminder: true,
+                            contractExpiry: true,
+                            aiCoachMessage: true,
+                            dailyMotivation: true,
+                            mealReminder: true,
+                            gymReminder: true,
+                            proteinReminder: true
+                        }
+                    }
+                },
+                version: 0
+            };
+
+            localStorage.setItem('fitness-contract-storage', JSON.stringify(storageData));
+            showStatus('user-status', '✅ 测试用户创建成功', 'success');
+            log('✅ 测试用户已创建并保存到localStorage');
+        }
+
+        function clearAllData() {
+            log('🗑️ 清理所有数据...');
+            localStorage.clear();
+            sessionStorage.clear();
+            showStatus('user-status', '✅ 所有数据已清理', 'success');
+            log('✅ localStorage和sessionStorage已清空');
+        }
+
+        function checkLocalStorage() {
+            log('🔍 检查localStorage数据...');
+            
+            const keys = Object.keys(localStorage);
+            if (keys.length === 0) {
+                showStatus('storage-status', '❌ localStorage为空', 'warning');
+                log('⚠️ localStorage中没有任何数据');
+                return;
+            }
+
+            showStatus('storage-status', `✅ 找到 ${keys.length} 个存储项`, 'success');
+            log(`📦 localStorage包含 ${keys.length} 个键:`);
+            
+            keys.forEach(key => {
+                const value = localStorage.getItem(key);
+                const size = new Blob([value]).size;
+                log(`  - ${key}: ${size} bytes`);
+                
+                if (key === 'fitness-contract-storage') {
+                    try {
+                        const data = JSON.parse(value);
+                        log(`    用户: ${data.state?.user?.nickname || '未登录'}`);
+                        log(`    登录状态: ${data.state?.isLoggedIn || false}`);
+                    } catch (e) {
+                        log(`    ❌ 数据格式错误: ${e.message}`, 'error');
+                    }
+                }
+            });
+        }
+
+        function showStorageKeys() {
+            log('🔑 显示所有存储键...');
+            const keys = Object.keys(localStorage);
+            if (keys.length === 0) {
+                showStatus('storage-status', '❌ 没有存储键', 'warning');
+                return;
+            }
+            
+            showStatus('storage-status', `📋 存储键: ${keys.join(', ')}`, 'info');
+            keys.forEach(key => log(`🔑 ${key}`));
+        }
+
+        // 页面加载时自动检查
+        window.onload = function() {
+            log('🚀 路由调试工具已启动');
+            checkUserStatus();
+        };
+    </script>
+</body>
+</html>

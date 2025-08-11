@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>修复微信缓存问题</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .log { margin: 10px 0; padding: 10px; background: #f5f5f5; border-radius: 5px; }
+        .error { background: #ffebee; color: #c62828; }
+        .success { background: #e8f5e9; color: #2e7d32; }
+        .warning { background: #fff3e0; color: #ef6c00; }
+        .button { padding: 10px 20px; margin: 10px 5px; background: #2196f3; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        .button:hover { background: #1976d2; }
+        .danger { background: #f44336; }
+        .danger:hover { background: #d32f2f; }
+    </style>
+</head>
+<body>
+    <h1>🔧 修复微信缓存问题</h1>
+    <p>这个工具将帮助您清理localStorage中包含微信支付二维码的历史打卡记录。</p>
+    
+    <div>
+        <button class="button" onclick="checkData()">🔍 检查数据</button>
+        <button class="button" onclick="fixWechatIssue()">🔧 修复微信缓存问题</button>
+        <button class="button danger" onclick="clearAllData()">🗑️ 清除所有数据</button>
+    </div>
+    
+    <div id="output"></div>
+    
+    <script>
+        function log(message, type = 'info') {
+            const output = document.getElementById('output');
+            const div = document.createElement('div');
+            div.className = `log ${type}`;
+            div.textContent = message;
+            output.appendChild(div);
+            console.log(message);
+        }
+        
+        function clearOutput() {
+            document.getElementById('output').innerHTML = '';
+        }
+        
+        function checkData() {
+            clearOutput();
+            log('🔍 开始检查localStorage数据...', 'info');
+            
+            try {
+                const storageData = localStorage.getItem('fitness-contract-storage');
+                if (!storageData) {
+                    log('❌ 没有找到localStorage数据', 'warning');
+                    return;
+                }
+                
+                const data = JSON.parse(storageData);
+                log('✅ 找到localStorage数据', 'success');
+                
+                let wechatCount = 0;
+                let totalCheckIns = 0;
+                
+                // 检查今日打卡记录
+                if (data.state && data.state.todayCheckIns) {
+                    totalCheckIns += data.state.todayCheckIns.length;
+                    data.state.todayCheckIns.forEach((checkIn, index) => {
+                        if (checkIn.aiResult && checkIn.aiResult.description.includes('微信')) {
+                            wechatCount++;
+                            log(`🚨 今日打卡记录 ${index + 1} 包含微信内容: ${checkIn.aiResult.description}`, 'error');
+                        }
+                    });
+                }
+                
+                // 检查历史打卡记录
+                if (data.state && data.state.checkInHistory) {
+                    totalCheckIns += data.state.checkInHistory.length;
+                    data.state.checkInHistory.forEach((checkIn, index) => {
+                        if (checkIn.aiResult && checkIn.aiResult.description.includes('微信')) {
+                            wechatCount++;
+                            log(`🚨 历史记录 ${index + 1} 包含微信内容: ${checkIn.aiResult.description}`, 'error');
+                        }
+                    });
+                }
+                
+                log(`📊 统计结果:`, 'info');
+                log(`   总打卡记录数: ${totalCheckIns}`, 'info');
+                log(`   包含微信内容的记录数: ${wechatCount}`, wechatCount > 0 ? 'error' : 'success');
+                
+                if (wechatCount > 0) {
+                    log('⚠️ 发现问题！建议点击"修复微信缓存问题"按钮来清理这些记录。', 'warning');
+                } else {
+                    log('✅ 没有发现微信相关的缓存问题。', 'success');
+                }
+                
+            } catch (error) {
+                log(`❌ 解析localStorage数据失败: ${error.message}`, 'error');
+            }
+        }
+        
+        function fixWechatIssue() {
+            clearOutput();
+            log('🔧 开始修复微信缓存问题...', 'info');
+            
+            try {
+                const storageData = localStorage.getItem('fitness-contract-storage');
+                if (!storageData) {
+                    log('❌ 没有找到localStorage数据', 'warning');
+                    return;
+                }
+                
+                const data = JSON.parse(storageData);
+                let removedCount = 0;
+                
+                // 清理今日打卡记录中的微信内容
+                if (data.state && data.state.todayCheckIns) {
+                    const originalCount = data.state.todayCheckIns.length;
+                    data.state.todayCheckIns = data.state.todayCheckIns.filter(checkIn => {
+                        const hasWechat = checkIn.aiResult && checkIn.aiResult.description.includes('微信');
+                        if (hasWechat) removedCount++;
+                        return !hasWechat;
+                    });
+                    log(`🧹 今日打卡记录: 原有 ${originalCount} 条，清理后 ${data.state.todayCheckIns.length} 条`, 'info');
+                }
+                
+                // 清理历史打卡记录中的微信内容
+                if (data.state && data.state.checkInHistory) {
+                    const originalCount = data.state.checkInHistory.length;
+                    data.state.checkInHistory = data.state.checkInHistory.filter(checkIn => {
+                        const hasWechat = checkIn.aiResult && checkIn.aiResult.description.includes('微信');
+                        if (hasWechat) removedCount++;
+                        return !hasWechat;
+                    });
+                    log(`🧹 历史打卡记录: 原有 ${originalCount} 条，清理后 ${data.state.checkInHistory.length} 条`, 'info');
+                }
+                
+                // 保存清理后的数据
+                localStorage.setItem('fitness-contract-storage', JSON.stringify(data));
+                
+                log(`✅ 修复完成！共清理了 ${removedCount} 条包含微信内容的记录。`, 'success');
+                log('🔄 建议刷新应用页面以确保更改生效。', 'info');
+                
+                if (removedCount > 0) {
+                    setTimeout(() => {
+                        if (confirm('修复完成！是否立即刷新页面以应用更改？')) {
+                            window.location.reload();
+                        }
+                    }, 1000);
+                }
+                
+            } catch (error) {
+                log(`❌ 修复过程中出错: ${error.message}`, 'error');
+            }
+        }
+        
+        function clearAllData() {
+            if (confirm('⚠️ 警告：这将清除所有应用数据，包括用户信息、契约和打卡记录。确定要继续吗？')) {
+                localStorage.removeItem('fitness-contract-storage');
+                log('🗑️ 所有数据已清除', 'success');
+                log('🔄 建议刷新应用页面', 'info');
+                
+                setTimeout(() => {
+                    if (confirm('数据已清除！是否立即刷新页面？')) {
+                        window.location.reload();
+                    }
+                }, 1000);
+            }
+        }
+        
+        // 页面加载时自动检查数据
+        window.onload = function() {
+            checkData();
+        };
+    </script>
+</body>
+</html>

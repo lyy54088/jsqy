@@ -1,17 +1,14 @@
-# 数据库设计说明
-
-## 概述
-
-健身教练应用使用 MongoDB 作为主数据库，采用文档型数据库的灵活性来存储用户数据、打卡记录、契约信息和AI对话历史。
+# AI健身教练 - 保证金管理系统数据库设计
 
 ## 数据库选型
 
-**选择 MongoDB 的原因：**
-- **灵活的文档结构**: 适合存储复杂的嵌套数据（如AI分析结果、用户配置等）
-- **水平扩展能力**: 支持分片，便于后期扩展
-- **JSON原生支持**: 与前端JavaScript应用无缝集成
-- **丰富的查询功能**: 支持复杂的聚合查询和地理位置查询
-- **成熟的生态系统**: 有丰富的工具和社区支持
+**选择**: MongoDB (NoSQL 文档数据库)
+
+**选择理由**:
+- 灵活的文档结构，适合保证金记录的复杂数据结构
+- 良好的水平扩展能力，支持大量用户数据
+- 丰富的查询功能，支持复杂的统计分析
+- 与 Node.js 生态系统集成良好
 
 ## 数据库配置
 
@@ -157,6 +154,44 @@ db.checkins.createIndex({ "location": "2dsphere" })
 }
 ```
 
+### 4. deposit_purchases (保证金购买记录集合)
+
+**用途**: 存储用户的保证金购买记录和支付信息
+
+**文档结构**:
+```javascript
+{
+  _id: ObjectId,
+  userId: ObjectId,       // 关联用户ID
+  contractId: ObjectId,   // 关联契约ID（可选，如果是为特定契约购买）
+  amount: Number,         // 保证金金额
+  paymentMethod: String,  // 支付方式: wechat|alipay|bank_card
+  paymentInfo: {          // 支付信息
+    transactionId: String,  // 第三方支付交易ID
+    paymentTime: Date,      // 支付时间
+    paymentStatus: String,  // 支付状态: pending|success|failed|refunded
+    refundInfo: {           // 退款信息（可选）
+      refundId: String,     // 退款ID
+      refundTime: Date,     // 退款时间
+      refundAmount: Number, // 退款金额
+      refundReason: String  // 退款原因
+    }
+  },
+  status: String,         // 记录状态: active|used|refunded|expired
+  expiryDate: Date,       // 过期时间（可选）
+  usageHistory: [         // 使用历史
+    {
+      contractId: ObjectId, // 使用的契约ID
+      usedAmount: Number,   // 使用金额
+      usedTime: Date,       // 使用时间
+      reason: String        // 使用原因: penalty|refund
+    }
+  ],
+  createdAt: Date,        // 创建时间
+  updatedAt: Date         // 更新时间
+}
+```
+
 **索引设计**:
 ```javascript
 // 用户查询索引
@@ -173,7 +208,30 @@ db.contracts.createIndex({ "startDate": 1, "endDate": 1 })
 db.contracts.createIndex({ "type": 1 })
 ```
 
-### 4. ai_coach_sessions (AI教练会话集合)
+**索引设计**:
+```javascript
+// 用户查询索引
+db.deposit_purchases.createIndex({ "userId": 1 })
+db.deposit_purchases.createIndex({ "userId": 1, "status": 1 })
+
+// 契约关联索引
+db.deposit_purchases.createIndex({ "contractId": 1 })
+
+// 支付状态索引
+db.deposit_purchases.createIndex({ "paymentInfo.paymentStatus": 1 })
+
+// 交易ID索引（用于支付回调查询）
+db.deposit_purchases.createIndex({ "paymentInfo.transactionId": 1 }, { unique: true, sparse: true })
+
+// 时间查询索引
+db.deposit_purchases.createIndex({ "createdAt": -1 })
+db.deposit_purchases.createIndex({ "paymentInfo.paymentTime": -1 })
+
+// 过期时间索引
+db.deposit_purchases.createIndex({ "expiryDate": 1 }, { sparse: true })
+```
+
+### 5. ai_coach_sessions (AI教练会话集合)
 
 **用途**: 存储用户与AI教练的对话历史
 
@@ -214,7 +272,9 @@ db.ai_coach_sessions.createIndex({ "updatedAt": -1 })
 erDiagram
     USERS ||--o{ CHECKINS : creates
     USERS ||--o{ CONTRACTS : signs
+    USERS ||--o{ DEPOSIT_PURCHASES : makes
     USERS ||--o{ AI_COACH_SESSIONS : initiates
+    CONTRACTS ||--o{ DEPOSIT_PURCHASES : requires
     
     USERS {
         ObjectId _id PK
@@ -252,6 +312,20 @@ erDiagram
         date updatedAt
     }
     
+    DEPOSIT_PURCHASES {
+        ObjectId _id PK
+        ObjectId userId FK
+        ObjectId contractId FK
+        number amount
+        string paymentMethod
+        object paymentInfo
+        string status
+        date expiryDate
+        array usageHistory
+        date createdAt
+        date updatedAt
+    }
+    
     AI_COACH_SESSIONS {
         ObjectId _id PK
         ObjectId userId FK
@@ -266,7 +340,9 @@ erDiagram
 
 ### 引用完整性
 - 所有集合中的 `userId` 字段必须引用 `users` 集合中的有效 `_id`
-- 删除用户时，需要级联删除相关的打卡记录、契约和AI会话
+- `deposit_purchases` 集合中的 `contractId` 字段必须引用 `contracts` 集合中的有效 `_id`
+- 删除用户时，需要级联删除相关的打卡记录、契约、保证金记录和AI会话
+- 删除契约时，需要检查相关的保证金记录状态
 
 ### 数据验证规则
 ```javascript
@@ -315,6 +391,31 @@ db.createCollection("checkins", {
     }
   }
 });
+
+// 保证金购买记录验证
+db.createCollection("deposit_purchases", {
+  validator: {
+    $jsonSchema: {
+      bsonType: "object",
+      required: ["userId", "amount", "paymentMethod", "paymentInfo", "status", "createdAt"],
+      properties: {
+        amount: {
+          bsonType: "number",
+          minimum: 0
+        },
+        paymentMethod: {
+          enum: ["wechat", "alipay", "bank_card"]
+        },
+        "paymentInfo.paymentStatus": {
+          enum: ["pending", "success", "failed", "refunded"]
+        },
+        status: {
+          enum: ["active", "used", "refunded", "expired"]
+        }
+      }
+    }
+  }
+});
 ```
 
 ## 性能优化策略
@@ -329,6 +430,7 @@ db.createCollection("checkins", {
 // 基于用户ID进行分片
 sh.shardCollection("fitness_coach.checkins", { "userId": 1 })
 sh.shardCollection("fitness_coach.contracts", { "userId": 1 })
+sh.shardCollection("fitness_coach.deposit_purchases", { "userId": 1 })
 sh.shardCollection("fitness_coach.ai_coach_sessions", { "userId": 1 })
 ```
 

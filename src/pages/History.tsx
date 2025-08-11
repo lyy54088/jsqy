@@ -10,7 +10,17 @@ const History: React.FC = () => {
 
   // 按日期分组打卡记录
   const groupedCheckIns = checkInHistory.reduce((groups, checkIn) => {
-    const date = checkIn.timestamp.toDateString();
+    // 安全检查，确保checkIn对象存在且有timestamp
+    if (!checkIn || !checkIn.timestamp) {
+      return groups;
+    }
+    
+    // 确保timestamp是Date对象
+    const timestamp = checkIn.timestamp instanceof Date 
+      ? checkIn.timestamp 
+      : new Date(checkIn.timestamp);
+    
+    const date = timestamp.toDateString();
     if (!groups[date]) {
       groups[date] = [];
     }
@@ -139,6 +149,11 @@ const History: React.FC = () => {
                     
                     <div className="p-4 space-y-3">
                       {checkIns.map(checkIn => {
+                        // 安全检查，确保checkIn对象存在且有必要的属性
+                        if (!checkIn || !checkIn.type || !checkIn.status) {
+                          return null;
+                        }
+                        
                         const typeInfo = getCheckInTypeInfo(checkIn.type);
                         const statusInfo = getStatusInfo(checkIn.status);
                         const StatusIcon = statusInfo.icon;
@@ -158,12 +173,36 @@ const History: React.FC = () => {
                                 </div>
                               </div>
                               
-                              <p className="text-sm text-gray-600 mb-2">{checkIn.aiResult.description}</p>
+                              {/* AI识别结果显示 */}
+                              {checkIn.aiResult && (
+                                <div className="mb-2">
+                                  <div className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
+                                    checkIn.aiResult.recognized 
+                                      ? 'bg-green-100 text-green-700' 
+                                      : 'bg-gray-100 text-gray-700'
+                                  }`}>
+                                    {checkIn.aiResult.recognized ? '🤖 AI识别' : '📝 手动记录'}
+                                    {checkIn.aiResult.recognized && (
+                                      <span className="ml-1">
+                                        {Math.round(checkIn.aiResult.confidence * 100)}%
+                                      </span>
+                                    )}
+                                  </div>
+                                  <p className="text-sm text-gray-600 mt-1">
+                                    {checkIn.aiResult.description}
+                                  </p>
+                                </div>
+                              )}
                               
                               <div className="flex items-center gap-4 text-xs text-gray-500">
                                 <div className="flex items-center gap-1">
                                   <Clock className="w-3 h-3" />
-                                  <span>{checkIn.timestamp.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}</span>
+                                  <span>
+                                    {(checkIn.timestamp instanceof Date 
+                                      ? checkIn.timestamp 
+                                      : new Date(checkIn.timestamp)
+                                    ).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}
+                                  </span>
                                 </div>
                                 
                                 {checkIn.location && (
@@ -172,8 +211,6 @@ const History: React.FC = () => {
                                     <span>{checkIn.location.address}</span>
                                   </div>
                                 )}
-                                
-                                <span>置信度: {Math.round(checkIn.aiResult.confidence * 100)}%</span>
                               </div>
                             </div>
                           </div>
@@ -205,8 +242,10 @@ const History: React.FC = () => {
             ) : (
               contractHistory.map(contract => {
                 const statusInfo = getContractStatusInfo(contract.status);
-                const totalDays = Math.ceil((new Date(contract.endDate).getTime() - new Date(contract.startDate).getTime()) / (1000 * 60 * 60 * 24));
-                const completionRate = (contract.completedDays / totalDays) * 100;
+                const startDate = contract.startDate instanceof Date ? contract.startDate : new Date(contract.startDate);
+                const endDate = contract.endDate instanceof Date ? contract.endDate : new Date(contract.endDate);
+                const totalDays = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+                const completionRate = totalDays > 0 ? (contract.completedDays / totalDays) * 100 : 0;
                 
                 return (
                   <div key={contract.id} className="bg-white rounded-xl p-4 border border-gray-200">
@@ -245,10 +284,24 @@ const History: React.FC = () => {
                     </div>
                     
                     <div className="text-sm text-gray-600">
-                      <p>开始时间: {contract.startDate.toLocaleDateString('zh-CN')}</p>
-                      <p>结束时间: {contract.endDate.toLocaleDateString('zh-CN')}</p>
+                      <p>开始时间: {(contract.startDate instanceof Date 
+                        ? contract.startDate 
+                        : new Date(contract.startDate)
+                      ).toLocaleDateString('zh-CN')}</p>
+                      <p>结束时间: {(contract.endDate instanceof Date 
+                        ? contract.endDate 
+                        : new Date(contract.endDate)
+                      ).toLocaleDateString('zh-CN')}</p>
                       {contract.violationDays > 0 && (
-                        <p className="text-red-600">违约天数: {contract.violationDays} 天</p>
+                        <div className="text-red-600 space-y-1">
+                          <p>违约天数: {contract.violationDays} 天</p>
+                          {contract.accumulatedPenalty > 0 && (
+                            <p>累计扣除: ¥{contract.accumulatedPenalty}</p>
+                          )}
+                          {contract.remainderAmount > 0 && contract.status === 'completed' && (
+                            <p className="text-green-600">余额返还: ¥{contract.remainderAmount}</p>
+                          )}
+                        </div>
                       )}
                     </div>
                   </div>

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Phone, User, Scale, Ruler, Target, MessageSquare } from 'lucide-react';
-import { useAppStore } from '@/store';
+import { useAppStore } from '../store';
 import type { User as UserType } from '@/store';
 
 // 微信图标组件
@@ -14,7 +14,7 @@ const WechatIcon: React.FC<{ className?: string }> = ({ className }) => (
 
 const Auth: React.FC = () => {
   const navigate = useNavigate();
-  const { setUser } = useAppStore();
+  const { setUser, resetAllData } = useAppStore();
   const [step, setStep] = useState<'phone' | 'profile'>('phone');
   const [formData, setFormData] = useState({
     phone: '',
@@ -39,20 +39,58 @@ const Auth: React.FC = () => {
     }
   };
 
-  const handleSendCode = () => {
+  const handleVerifyCode = async () => {
+    if (!formData.verificationCode) {
+      alert('请输入验证码');
+      return;
+    }
+    
+    try {
+      // 使用短信服务验证验证码
+      const { smsService } = await import('../lib/sms-service');
+      const result = smsService.verifyCode(formData.phone, formData.verificationCode);
+      
+      if (result.success) {
+        setStep('profile');
+      } else {
+        alert(result.message);
+      }
+      
+    } catch (error) {
+      console.error('验证码验证失败:', error);
+      alert('验证失败，请稍后重试');
+    }
+  };
+
+  const handleSendCode = async () => {
     if (formData.phone.length !== 11) {
       alert('请输入正确的手机号码');
       return;
     }
     
-    // 模拟发送验证码
-    const code = Math.floor(100000 + Math.random() * 900000).toString();
-    setSentCode(code);
-    setCountdown(60);
-    
-    // 在实际应用中，这里会调用短信服务API发送验证码
-    console.log('验证码已发送:', code);
-    alert(`验证码已发送: ${code}（仅用于演示）`);
+    try {
+      // 使用真实的短信服务
+      const { smsService } = await import('../lib/sms-service');
+      const result = await smsService.sendVerificationCode(formData.phone);
+      
+      if (result.success) {
+        setSentCode(result.code || '');
+        setCountdown(60);
+        alert(result.message);
+        
+        // 在开发环境下显示验证码
+        if (import.meta.env.DEV && result.code) {
+          console.log(`🔐 开发模式验证码: ${result.code}`);
+        }
+        
+      } else {
+        alert(result.message);
+      }
+      
+    } catch (error) {
+      console.error('发送验证码失败:', error);
+      alert('发送失败，请稍后重试');
+    }
   };
 
   // 倒计时效果
@@ -65,32 +103,20 @@ const Auth: React.FC = () => {
   }, [countdown]);
 
   const handleWechatLogin = () => {
-    // 模拟微信登录流程
-    // 在实际应用中，这里会调用微信SDK进行授权登录
-    console.log('微信登录中...');
+    // TODO: 集成真实的微信登录SDK
+    // 这里应该调用微信开放平台的登录接口
     
-    // 模拟微信登录成功，获取用户信息
-    setTimeout(() => {
-      const wechatUser: UserType = {
-        id: 'wechat_' + Date.now().toString(),
-        phone: '', // 微信登录可能不会直接提供手机号
-        nickname: '微信用户', // 从微信获取的昵称
-        age: 25, // 默认值，后续可在个人资料中修改
-        height: 170,
-        weight: 65,
-        fitnessGoal: 'lose_weight',
-        createdAt: new Date(),
-        loginType: 'wechat' // 标记登录方式
-      };
-      
-      setUser(wechatUser);
-      // 微信登录成功后直接进入应用，或者跳转到完善资料页面
-      navigate('/dashboard');
-    }, 1000);
+    // 清理所有旧数据，确保新用户有干净的状态
+    resetAllData();
+    
+    alert('微信登录功能暂未集成，请联系开发团队');
   };
 
   const handleProfileSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // 清理所有旧数据，确保新用户有干净的状态
+    resetAllData();
     
     const user: UserType = {
       id: Date.now().toString(),
@@ -194,6 +220,31 @@ const Auth: React.FC = () => {
               <WechatIcon className="w-5 h-5" />
               微信登录
             </button>
+            
+            {/* 开发环境快速登录 */}
+            {import.meta.env.DEV && (
+              <button
+                type="button"
+                onClick={() => {
+                  resetAllData();
+                  const testUser: UserType = {
+                    id: 'test-user-' + Date.now(),
+                    phone: '13800138000',
+                    nickname: '测试用户',
+                    age: 25,
+                    height: 170,
+                    weight: 65,
+                    fitnessGoal: 'lose_weight',
+                    createdAt: new Date()
+                  };
+                  setUser(testUser);
+                  navigate('/dashboard');
+                }}
+                className="w-full bg-purple-500 text-white py-3 rounded-lg font-medium hover:bg-purple-600 transition-colors"
+              >
+                🚀 快速登录 (开发模式)
+              </button>
+            )}
           </form>
         )}
 

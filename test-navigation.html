@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>导航测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .info { background: #d1ecf1; color: #0c5460; }
+    </style>
+</head>
+<body>
+    <h1>🔍 健身应用导航测试</h1>
+    
+    <div class="test-section">
+        <h2>当前状态检查</h2>
+        <div id="status-info"></div>
+        <button onclick="checkStatus()">检查应用状态</button>
+    </div>
+    
+    <div class="test-section">
+        <h2>直接URL测试</h2>
+        <p>测试直接访问各个页面的URL：</p>
+        <button onclick="testUrl('/dashboard')">测试 Dashboard</button>
+        <button onclick="testUrl('/contract/create')">测试 创建契约</button>
+        <button onclick="testUrl('/checkin')">测试 打卡</button>
+        <button onclick="testUrl('/auth')">测试 登录页</button>
+        <div id="url-results"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>localStorage 数据检查</h2>
+        <button onclick="checkLocalStorage()">检查存储数据</button>
+        <button onclick="clearAllData()">清理所有数据</button>
+        <div id="storage-info"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>快速操作</h2>
+        <button onclick="openApp()">打开应用主页</button>
+        <button onclick="openAppInNewTab()">新标签页打开应用</button>
+    </div>
+
+    <script>
+        function checkStatus() {
+            const statusDiv = document.getElementById('status-info');
+            let html = '<h3>应用状态：</h3>';
+            
+            // 检查localStorage
+            const storageData = localStorage.getItem('fitness-contract-storage');
+            if (storageData) {
+                try {
+                    const data = JSON.parse(storageData);
+                    const state = data.state;
+                    
+                    html += `<div class="info">
+                        <strong>用户状态：</strong> ${state.user ? '已登录' : '未登录'}<br>
+                        <strong>用户信息：</strong> ${state.user ? state.user.nickname || state.user.phone : '无'}<br>
+                        <strong>契约状态：</strong> ${state.currentContract ? '有契约' : '无契约'}<br>
+                        <strong>AI教练：</strong> ${state.aiCoach ? '已设置' : '未设置'}
+                    </div>`;
+                } catch (e) {
+                    html += `<div class="error">localStorage数据解析失败: ${e.message}</div>`;
+                }
+            } else {
+                html += '<div class="info">没有找到localStorage数据</div>';
+            }
+            
+            statusDiv.innerHTML = html;
+        }
+        
+        function testUrl(path) {
+            const baseUrl = 'http://localhost:5175';
+            const fullUrl = baseUrl + path;
+            
+            // 在新窗口中打开URL进行测试
+            const testWindow = window.open(fullUrl, '_blank', 'width=400,height=600');
+            
+            const resultsDiv = document.getElementById('url-results');
+            resultsDiv.innerHTML += `<div class="info">已在新窗口打开: ${path}</div>`;
+        }
+        
+        function checkLocalStorage() {
+            const storageDiv = document.getElementById('storage-info');
+            let html = '<h3>localStorage 内容：</h3>';
+            
+            const storageData = localStorage.getItem('fitness-contract-storage');
+            if (storageData) {
+                try {
+                    const data = JSON.parse(storageData);
+                    html += `<pre style="background: #f8f9fa; padding: 10px; border-radius: 4px; overflow-x: auto;">${JSON.stringify(data, null, 2)}</pre>`;
+                } catch (e) {
+                    html += `<div class="error">数据解析失败: ${e.message}</div>`;
+                }
+            } else {
+                html += '<div class="info">localStorage 为空</div>';
+            }
+            
+            storageDiv.innerHTML = html;
+        }
+        
+        function clearAllData() {
+            if (confirm('确定要清理所有数据吗？')) {
+                localStorage.clear();
+                sessionStorage.clear();
+                document.getElementById('storage-info').innerHTML = '<div class="success">所有数据已清理</div>';
+            }
+        }
+        
+        function openApp() {
+            window.location.href = 'http://localhost:5175/';
+        }
+        
+        function openAppInNewTab() {
+            window.open('http://localhost:5175/', '_blank');
+        }
+        
+        // 页面加载时自动检查状态
+        window.onload = function() {
+            checkStatus();
+        };
+    </script>
+</body>
+</html>

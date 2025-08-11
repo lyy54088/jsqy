@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI健身教练 - 保证金管理API文档表格</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 2.5em;
+            font-weight: 300;
+        }
+        .header p {
+            margin: 10px 0 0 0;
+            opacity: 0.9;
+            font-size: 1.1em;
+        }
+        .info-section {
+            padding: 20px 30px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #e9ecef;
+        }
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-top: 15px;
+        }
+        .info-card {
+            background: white;
+            padding: 15px;
+            border-radius: 6px;
+            border-left: 4px solid #667eea;
+        }
+        .info-card h3 {
+            margin: 0 0 8px 0;
+            color: #333;
+            font-size: 0.9em;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .info-card p {
+            margin: 0;
+            color: #666;
+            font-family: 'Courier New', monospace;
+        }
+        .table-container {
+            padding: 30px;
+        }
+        .section-title {
+            font-size: 1.8em;
+            color: #333;
+            margin: 0 0 20px 0;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #667eea;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 30px;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        th {
+            background: #667eea;
+            color: white;
+            padding: 15px 12px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 0.9em;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        td {
+            padding: 12px;
+            border-bottom: 1px solid #e9ecef;
+            vertical-align: top;
+        }
+        tr:hover {
+            background-color: #f8f9fa;
+        }
+        .method {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-weight: bold;
+            font-size: 0.8em;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .method.get {
+            background: #d4edda;
+            color: #155724;
+        }
+        .method.post {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+        .endpoint {
+            font-family: 'Courier New', monospace;
+            background: #f8f9fa;
+            padding: 4px 6px;
+            border-radius: 3px;
+            font-size: 0.9em;
+        }
+        .description {
+            color: #666;
+            line-height: 1.5;
+        }
+        .auth-info {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 6px;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        .auth-info h3 {
+            margin: 0 0 10px 0;
+            color: #856404;
+        }
+        .auth-info code {
+            background: #f8f9fa;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+        }
+        .footer {
+            background: #f8f9fa;
+            padding: 20px 30px;
+            text-align: center;
+            color: #666;
+            border-top: 1px solid #e9ecef;
+        }
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+            .header {
+                padding: 20px;
+            }
+            .header h1 {
+                font-size: 2em;
+            }
+            .table-container {
+                padding: 20px;
+                overflow-x: auto;
+            }
+            table {
+                min-width: 600px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>AI健身教练</h1>
+            <p>保证金管理系统 API 文档</p>
+        </div>
+
+        <div class="info-section">
+            <h2 style="margin: 0 0 15px 0; color: #333;">基本信息</h2>
+            <div class="info-grid">
+                <div class="info-card">
+                    <h3>API 版本</h3>
+                    <p>v1.0.0</p>
+                </div>
+                <div class="info-card">
+                    <h3>基础 URL</h3>
+                    <p>http://localhost:3000/api/v1</p>
+                </div>
+                <div class="info-card">
+                    <h3>服务状态</h3>
+                    <p>🟢 运行中</p>
+                </div>
+                <div class="info-card">
+                    <h3>文档更新</h3>
+                    <p>2024-12-30</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="table-container">
+            <h2 class="section-title">API 接口列表</h2>
+            
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width: 80px;">方法</th>
+                        <th style="width: 300px;">接口路径</th>
+                        <th>功能描述</th>
+                        <th style="width: 120px;">认证要求</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><span class="method get">GET</span></td>
+                        <td><code class="endpoint">/deposit/records</code></td>
+                        <td class="description">获取保证金购买记录列表，支持分页查询和条件筛选</td>
+                        <td>✅ 必需</td>
+                    </tr>
+                    <tr>
+                        <td><span class="method post">POST</span></td>
+                        <td><code class="endpoint">/deposit/records</code></td>
+                        <td class="description">创建新的保证金购买记录，包含用户信息和支付详情</td>
+                        <td>✅ 必需</td>
+                    </tr>
+                    <tr>
+                        <td><span class="method get">GET</span></td>
+                        <td><code class="endpoint">/deposit/records/:id</code></td>
+                        <td class="description">获取指定ID的保证金购买记录详细信息</td>
+                        <td>✅ 必需</td>
+                    </tr>
+                    <tr>
+                        <td><span class="method post">POST</span></td>
+                        <td><code class="endpoint">/deposit/records/:id/refund</code></td>
+                        <td class="description">申请保证金退款，需要提供退款原因和相关信息</td>
+                        <td>✅ 必需</td>
+                    </tr>
+                    <tr>
+                        <td><span class="method get">GET</span></td>
+                        <td><code class="endpoint">/deposit/statistics</code></td>
+                        <td class="description">获取保证金统计信息，包含总额、数量、趋势等数据</td>
+                        <td>✅ 必需</td>
+                    </tr>
+                    <tr>
+                        <td><span class="method get">GET</span></td>
+                        <td><code class="endpoint">/deposit/export</code></td>
+                        <td class="description">导出保证金记录表格，支持多种格式（CSV、Excel）</td>
+                        <td>✅ 必需</td>
+                    </tr>
+                    <tr>
+                        <td><span class="method post">POST</span></td>
+                        <td><code class="endpoint">/deposit/callback</code></td>
+                        <td class="description">处理第三方支付平台的回调通知，更新订单状态</td>
+                        <td>❌ 不需要</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="auth-info">
+                <h3>🔐 认证信息</h3>
+                <p><strong>认证方式：</strong> Bearer Token (JWT)</p>
+                <p><strong>请求头格式：</strong> <code>Authorization: Bearer &lt;jwt_token&gt;</code></p>
+                <p><strong>Token 获取：</strong> 通过用户登录接口获得</p>
+                <p><strong>Token 有效期：</strong> 7天</p>
+            </div>
+
+            <h2 class="section-title">请求参数说明</h2>
+            
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width: 200px;">接口</th>
+                        <th style="width: 150px;">参数名</th>
+                        <th style="width: 100px;">类型</th>
+                        <th style="width: 80px;">必需</th>
+                        <th>说明</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td rowspan="5"><code>/deposit/records</code> (GET)</td>
+                        <td>page</td>
+                        <td>number</td>
+                        <td>否</td>
+                        <td>页码，默认为1</td>
+                    </tr>
+                    <tr>
+                        <td>limit</td>
+                        <td>number</td>
+                        <td>否</td>
+                        <td>每页数量，默认为10，最大100</td>
+                    </tr>
+                    <tr>
+                        <td>status</td>
+                        <td>string</td>
+                        <td>否</td>
+                        <td>状态筛选：pending, active, refunded, expired</td>
+                    </tr>
+                    <tr>
+                        <td>startDate</td>
+                        <td>string</td>
+                        <td>否</td>
+                        <td>开始日期，格式：YYYY-MM-DD</td>
+                    </tr>
+                    <tr>
+                        <td>endDate</td>
+                        <td>string</td>
+                        <td>否</td>
+                        <td>结束日期，格式：YYYY-MM-DD</td>
+                    </tr>
+                    <tr>
+                        <td rowspan="4"><code>/deposit/records</code> (POST)</td>
+                        <td>contractId</td>
+                        <td>string</td>
+                        <td>是</td>
+                        <td>契约ID</td>
+                    </tr>
+                    <tr>
+                        <td>amount</td>
+                        <td>number</td>
+                        <td>是</td>
+                        <td>保证金金额，必须大于0</td>
+                    </tr>
+                    <tr>
+                        <td>paymentMethod</td>
+                        <td>string</td>
+                        <td>是</td>
+                        <td>支付方式：alipay, wechat, bank_transfer, credit_card</td>
+                    </tr>
+                    <tr>
+                        <td>description</td>
+                        <td>string</td>
+                        <td>否</td>
+                        <td>备注说明，最大500字符</td>
+                    </tr>
+                    <tr>
+                        <td><code>/deposit/records/:id/refund</code></td>
+                        <td>reason</td>
+                        <td>string</td>
+                        <td>是</td>
+                        <td>退款原因</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h2 class="section-title">响应状态码</h2>
+            
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width: 100px;">状态码</th>
+                        <th style="width: 150px;">状态描述</th>
+                        <th>说明</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>200</strong></td>
+                        <td>OK</td>
+                        <td>请求成功</td>
+                    </tr>
+                    <tr>
+                        <td><strong>201</strong></td>
+                        <td>Created</td>
+                        <td>资源创建成功</td>
+                    </tr>
+                    <tr>
+                        <td><strong>400</strong></td>
+                        <td>Bad Request</td>
+                        <td>请求参数错误</td>
+                    </tr>
+                    <tr>
+                        <td><strong>401</strong></td>
+                        <td>Unauthorized</td>
+                        <td>未授权，需要登录</td>
+                    </tr>
+                    <tr>
+                        <td><strong>403</strong></td>
+                        <td>Forbidden</td>
+                        <td>禁止访问，权限不足</td>
+                    </tr>
+                    <tr>
+                        <td><strong>404</strong></td>
+                        <td>Not Found</td>
+                        <td>资源不存在</td>
+                    </tr>
+                    <tr>
+                        <td><strong>429</strong></td>
+                        <td>Too Many Requests</td>
+                        <td>请求频率超限</td>
+                    </tr>
+                    <tr>
+                        <td><strong>500</strong></td>
+                        <td>Internal Server Error</td>
+                        <td>服务器内部错误</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="footer">
+            <p>© 2024 AI健身教练保证金管理系统 | 技术支持：Node.js + Express.js + MongoDB</p>
+            <p>最后更新：2024年12月30日</p>
+        </div>
+    </div>
+</body>
+</html>

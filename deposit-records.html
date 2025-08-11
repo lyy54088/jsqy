@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>保证金交易记录与退款管理</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: 300;
+        }
+        
+        .header p {
+            opacity: 0.9;
+            font-size: 1.1em;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            padding: 30px;
+            background: #f8f9fa;
+        }
+        
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            border-left: 4px solid #667eea;
+        }
+        
+        .stat-card h3 {
+            color: #666;
+            font-size: 0.9em;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .stat-card .value {
+            font-size: 2em;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 5px;
+        }
+        
+        .stat-card .change {
+            font-size: 0.8em;
+            color: #28a745;
+        }
+        
+        .controls {
+            padding: 20px 30px;
+            background: white;
+            border-bottom: 1px solid #e9ecef;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        
+        .filters {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        
+        .filter-group label {
+            font-size: 0.8em;
+            color: #666;
+            font-weight: 500;
+        }
+        
+        .filter-group select,
+        .filter-group input {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 0.9em;
+        }
+        
+        .actions {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9em;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #5a6fd8;
+        }
+        
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+        
+        .btn-success:hover {
+            background: #218838;
+        }
+        
+        .btn-outline {
+            background: transparent;
+            color: #667eea;
+            border: 1px solid #667eea;
+        }
+        
+        .btn-outline:hover {
+            background: #667eea;
+            color: white;
+        }
+        
+        .tabs {
+            display: flex;
+            background: #f8f9fa;
+            border-bottom: 1px solid #e9ecef;
+        }
+        
+        .tab {
+            flex: 1;
+            padding: 15px 20px;
+            text-align: center;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+        
+        .tab.active {
+            background: white;
+            border-bottom-color: #667eea;
+            color: #667eea;
+        }
+        
+        .tab:hover {
+            background: #e9ecef;
+        }
+        
+        .table-container {
+            padding: 30px;
+            overflow-x: auto;
+        }
+        
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .table th {
+            background: #667eea;
+            color: white;
+            padding: 15px 12px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 0.9em;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .table td {
+            padding: 15px 12px;
+            border-bottom: 1px solid #e9ecef;
+            vertical-align: middle;
+        }
+        
+        .table tr:hover {
+            background: #f8f9fa;
+        }
+        
+        .status {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8em;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .status.active {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .status.pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+        
+        .status.refunded {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .status.expired {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+        
+        .amount {
+            font-weight: bold;
+            color: #28a745;
+        }
+        
+        .amount.refund {
+            color: #dc3545;
+        }
+        
+        .action-btn {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8em;
+            margin-right: 5px;
+            transition: all 0.3s ease;
+        }
+        
+        .action-btn.refund {
+            background: #ffc107;
+            color: #212529;
+        }
+        
+        .action-btn.refund:hover {
+            background: #e0a800;
+        }
+        
+        .action-btn.view {
+            background: #17a2b8;
+            color: white;
+        }
+        
+        .action-btn.view:hover {
+            background: #138496;
+        }
+        
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            margin-top: 30px;
+        }
+        
+        .pagination button {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            background: white;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+        
+        .pagination button.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+        
+        .pagination button:hover:not(.active) {
+            background: #f8f9fa;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #666;
+        }
+        
+        .empty-state img {
+            width: 120px;
+            opacity: 0.5;
+            margin-bottom: 20px;
+        }
+        
+        .empty-state h3 {
+            margin-bottom: 10px;
+            color: #333;
+        }
+        
+        @media (max-width: 768px) {
+            .controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .filters {
+                justify-content: center;
+            }
+            
+            .actions {
+                justify-content: center;
+            }
+            
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .table-container {
+                padding: 15px;
+            }
+            
+            .table {
+                font-size: 0.8em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>💰 保证金管理系统</h1>
+            <p>交易记录与退款管理中心</p>
+        </div>
+
+        <!-- 统计概览 -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <h3>总交易笔数</h3>
+                <div class="value">1,247</div>
+                <div class="change">+12% 本月</div>
+            </div>
+            <div class="stat-card">
+                <h3>总交易金额</h3>
+                <div class="value">¥2,456,789</div>
+                <div class="change">+8.5% 本月</div>
+            </div>
+            <div class="stat-card">
+                <h3>退款笔数</h3>
+                <div class="value">89</div>
+                <div class="change">-5% 本月</div>
+            </div>
+            <div class="stat-card">
+                <h3>退款金额</h3>
+                <div class="value">¥156,432</div>
+                <div class="change">-3.2% 本月</div>
+            </div>
+            <div class="stat-card">
+                <h3>活跃保证金</h3>
+                <div class="value">1,158</div>
+                <div class="change">+15% 本月</div>
+            </div>
+            <div class="stat-card">
+                <h3>平均金额</h3>
+                <div class="value">¥1,970</div>
+                <div class="change">+2.1% 本月</div>
+            </div>
+        </div>
+
+        <!-- 筛选控制 -->
+        <div class="controls">
+            <div class="filters">
+                <div class="filter-group">
+                    <label>状态筛选</label>
+                    <select id="statusFilter">
+                        <option value="">全部状态</option>
+                        <option value="active">活跃</option>
+                        <option value="pending">待处理</option>
+                        <option value="refunded">已退款</option>
+                        <option value="expired">已过期</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label>开始日期</label>
+                    <input type="date" id="startDate">
+                </div>
+                <div class="filter-group">
+                    <label>结束日期</label>
+                    <input type="date" id="endDate">
+                </div>
+                <div class="filter-group">
+                    <label>金额范围</label>
+                    <select id="amountRange">
+                        <option value="">全部金额</option>
+                        <option value="0-1000">¥0 - ¥1,000</option>
+                        <option value="1000-5000">¥1,000 - ¥5,000</option>
+                        <option value="5000-10000">¥5,000 - ¥10,000</option>
+                        <option value="10000+">¥10,000+</option>
+                    </select>
+                </div>
+            </div>
+            <div class="actions">
+                <button class="btn btn-outline" onclick="resetFilters()">重置筛选</button>
+                <button class="btn btn-success" onclick="exportData()">导出数据</button>
+                <button class="btn btn-primary" onclick="refreshData()">刷新数据</button>
+            </div>
+        </div>
+
+        <!-- 标签页 -->
+        <div class="tabs">
+            <div class="tab active" onclick="switchTab('transactions')">
+                📊 交易记录
+            </div>
+            <div class="tab" onclick="switchTab('refunds')">
+                💸 退款记录
+            </div>
+        </div>
+
+        <!-- 交易记录表格 -->
+        <div id="transactions-content" class="table-container">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>记录ID</th>
+                        <th>用户信息</th>
+                        <th>契约ID</th>
+                        <th>交易金额</th>
+                        <th>支付方式</th>
+                        <th>交易时间</th>
+                        <th>状态</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody id="transactionsTable">
+                    <tr>
+                        <td>#DEP001247</td>
+                        <td>
+                            <div><strong>张三</strong></div>
+                            <div style="color: #666; font-size: 0.8em;">zhang.san@email.com</div>
+                        </td>
+                        <td>CONTRACT_2024_001</td>
+                        <td><span class="amount">¥2,000</span></td>
+                        <td>支付宝</td>
+                        <td>2024-12-30 14:30:25</td>
+                        <td><span class="status active">活跃</span></td>
+                        <td>
+                            <button class="action-btn view" onclick="viewDetails('DEP001247')">查看</button>
+                            <button class="action-btn refund" onclick="processRefund('DEP001247')">退款</button>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>#DEP001246</td>
+                        <td>
+                            <div><strong>李四</strong></div>
+                            <div style="color: #666; font-size: 0.8em;">li.si@email.com</div>
+                        </td>
+                        <td>CONTRACT_2024_002</td>
+                        <td><span class="amount">¥1,500</span></td>
+                        <td>微信支付</td>
+                        <td>2024-12-30 13:15:42</td>
+                        <td><span class="status pending">待处理</span></td>
+                        <td>
+                            <button class="action-btn view" onclick="viewDetails('DEP001246')">查看</button>
+                            <button class="action-btn refund" onclick="processRefund('DEP001246')">退款</button>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>#DEP001245</td>
+                        <td>
+                            <div><strong>王五</strong></div>
+                            <div style="color: #666; font-size: 0.8em;">wang.wu@email.com</div>
+                        </td>
+                        <td>CONTRACT_2024_003</td>
+                        <td><span class="amount">¥3,000</span></td>
+                        <td>银行转账</td>
+                        <td>2024-12-30 11:45:18</td>
+                        <td><span class="status active">活跃</span></td>
+                        <td>
+                            <button class="action-btn view" onclick="viewDetails('DEP001245')">查看</button>
+                            <button class="action-btn refund" onclick="processRefund('DEP001245')">退款</button>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>#DEP001244</td>
+                        <td>
+                            <div><strong>赵六</strong></div>
+                            <div style="color: #666; font-size: 0.8em;">zhao.liu@email.com</div>
+                        </td>
+                        <td>CONTRACT_2024_004</td>
+                        <td><span class="amount">¥2,500</span></td>
+                        <td>信用卡</td>
+                        <td>2024-12-30 10:20:33</td>
+                        <td><span class="status refunded">已退款</span></td>
+                        <td>
+                            <button class="action-btn view" onclick="viewDetails('DEP001244')">查看</button>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>#DEP001243</td>
+                        <td>
+                            <div><strong>孙七</strong></div>
+                            <div style="color: #666; font-size: 0.8em;">sun.qi@email.com</div>
+                        </td>
+                        <td>CONTRACT_2024_005</td>
+                        <td><span class="amount">¥1,800</span></td>
+                        <td>支付宝</td>
+                        <td>2024-12-29 16:55:12</td>
+                        <td><span class="status expired">已过期</span></td>
+                        <td>
+                            <button class="action-btn view" onclick="viewDetails('DEP001243')">查看</button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- 退款记录表格 -->
+        <div id="refunds-content" class="table-container" style="display: none;">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>退款ID</th>
+                        <th>原交易ID</th>
+                        <th>用户信息</th>
+                        <th>退款金额</th>
+                        <th>退款原因</th>
+                        <th>申请时间</th>
+                        <th>处理时间</th>
+                        <th>状态</th>
+                    </tr>
+                </thead>
+                <tbody id="refundsTable">
+                    <tr>
+                        <td>#REF001089</td>
+                        <td>#DEP001244</td>
+                        <td>
+                            <div><strong>赵六</strong></div>
+                            <div style="color: #666; font-size: 0.8em;">zhao.liu@email.com</div>
+                        </td>
+                        <td><span class="amount refund">-¥2,500</span></td>
+                        <td>个人原因取消</td>
+                        <td>2024-12-30 09:30:15</td>
+                        <td>2024-12-30 10:45:22</td>
+                        <td><span class="status refunded">已完成</span></td>
+                    </tr>
+                    <tr>
+                        <td>#REF001088</td>
+                        <td>#DEP001230</td>
+                        <td>
+                            <div><strong>周八</strong></div>
+                            <div style="color: #666; font-size: 0.8em;">zhou.ba@email.com</div>
+                        </td>
+                        <td><span class="amount refund">-¥1,200</span></td>
+                        <td>服务质量问题</td>
+                        <td>2024-12-29 14:20:33</td>
+                        <td>2024-12-29 16:15:45</td>
+                        <td><span class="status refunded">已完成</span></td>
+                    </tr>
+                    <tr>
+                        <td>#REF001087</td>
+                        <td>#DEP001225</td>
+                        <td>
+                            <div><strong>吴九</strong></div>
+                            <div style="color: #666; font-size: 0.8em;">wu.jiu@email.com</div>
+                        </td>
+                        <td><span class="amount refund">-¥3,500</span></td>
+                        <td>教练时间冲突</td>
+                        <td>2024-12-29 11:45:18</td>
+                        <td>2024-12-29 13:30:25</td>
+                        <td><span class="status refunded">已完成</span></td>
+                    </tr>
+                    <tr>
+                        <td>#REF001086</td>
+                        <td>#DEP001220</td>
+                        <td>
+                            <div><strong>郑十</strong></div>
+                            <div style="color: #666; font-size: 0.8em;">zheng.shi@email.com</div>
+                        </td>
+                        <td><span class="amount refund">-¥2,000</span></td>
+                        <td>健康原因无法继续</td>
+                        <td>2024-12-28 15:20:42</td>
+                        <td>2024-12-28 17:45:33</td>
+                        <td><span class="status refunded">已完成</span></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- 分页 -->
+        <div class="pagination">
+            <button onclick="changePage('prev')">‹ 上一页</button>
+            <button class="active">1</button>
+            <button onclick="changePage(2)">2</button>
+            <button onclick="changePage(3)">3</button>
+            <button onclick="changePage(4)">4</button>
+            <button onclick="changePage(5)">5</button>
+            <button onclick="changePage('next')">下一页 ›</button>
+        </div>
+    </div>
+
+    <script>
+        // 切换标签页
+        function switchTab(tabName) {
+            // 更新标签样式
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            // 显示对应内容
+            document.getElementById('transactions-content').style.display = tabName === 'transactions' ? 'block' : 'none';
+            document.getElementById('refunds-content').style.display = tabName === 'refunds' ? 'block' : 'none';
+        }
+
+        // 查看详情
+        function viewDetails(id) {
+            alert(`查看记录详情: ${id}\n\n这里将显示详细的交易信息，包括:\n- 完整的用户信息\n- 契约详情\n- 支付流水\n- 状态变更历史`);
+        }
+
+        // 处理退款
+        function processRefund(id) {
+            const reason = prompt(`申请退款: ${id}\n\n请输入退款原因:`);
+            if (reason) {
+                alert(`退款申请已提交!\n\n记录ID: ${id}\n退款原因: ${reason}\n\n系统将在1-3个工作日内处理您的退款申请。`);
+            }
+        }
+
+        // 重置筛选
+        function resetFilters() {
+            document.getElementById('statusFilter').value = '';
+            document.getElementById('startDate').value = '';
+            document.getElementById('endDate').value = '';
+            document.getElementById('amountRange').value = '';
+            alert('筛选条件已重置');
+        }
+
+        // 导出数据
+        function exportData() {
+            alert('正在导出数据...\n\n支持格式:\n- Excel (.xlsx)\n- CSV (.csv)\n- PDF报告\n\n导出完成后将自动下载到您的设备。');
+        }
+
+        // 刷新数据
+        function refreshData() {
+            alert('正在刷新数据...\n\n已获取最新的交易记录和退款信息。');
+        }
+
+        // 分页
+        function changePage(page) {
+            if (page === 'prev' || page === 'next') {
+                alert(`${page === 'prev' ? '上一页' : '下一页'}功能`);
+            } else {
+                alert(`跳转到第 ${page} 页`);
+            }
+        }
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            // 设置默认日期范围（最近30天）
+            const today = new Date();
+            const thirtyDaysAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
+            
+            document.getElementById('endDate').value = today.toISOString().split('T')[0];
+            document.getElementById('startDate').value = thirtyDaysAgo.toISOString().split('T')[0];
+        });
+    </script>
+</body>
+</html>

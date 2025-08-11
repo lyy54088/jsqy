@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI识别问题完整修复测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .success { background: #d4edda; border-color: #c3e6cb; }
+        .warning { background: #fff3cd; border-color: #ffeaa7; }
+        .error { background: #f8d7da; border-color: #f5c6cb; }
+        .info { background: #d1ecf1; border-color: #bee5eb; }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background: #0056b3; }
+        button.danger { background: #dc3545; }
+        button.danger:hover { background: #c82333; }
+        button.success { background: #28a745; }
+        button.success:hover { background: #218838; }
+        .log { 
+            background: #f8f9fa; 
+            padding: 10px; 
+            border-radius: 5px; 
+            font-family: monospace; 
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+            font-size: 12px;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        .status-ok { background: #28a745; }
+        .status-error { background: #dc3545; }
+        .status-warning { background: #ffc107; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 AI识别问题完整修复测试</h1>
+        <p>这个工具将帮助您验证AI识别缓存问题和图片格式问题是否已经修复。</p>
+    </div>
+
+    <div class="grid">
+        <div class="container">
+            <h2>📋 问题诊断</h2>
+            
+            <div class="test-section">
+                <h3>🔍 系统状态检查</h3>
+                <button onclick="checkSystemStatus()">检查系统状态</button>
+                <div id="systemStatus" class="log">等待检查...</div>
+            </div>
+
+            <div class="test-section">
+                <h3>💾 缓存数据检查</h3>
+                <button onclick="checkCacheData()">检查缓存数据</button>
+                <button onclick="clearProblemCache()" class="danger">清理问题缓存</button>
+                <button onclick="clearAllCache()" class="danger">清空所有缓存</button>
+                <div id="cacheStatus" class="log">等待检查...</div>
+            </div>
+        </div>
+
+        <div class="container">
+            <h2>🧪 功能测试</h2>
+            
+            <div class="test-section">
+                <h3>🖼️ 图片格式测试</h3>
+                <input type="file" id="testImageInput" accept="image/*" style="margin-bottom: 10px;">
+                <br>
+                <button onclick="testImageProcessing()">测试图片处理</button>
+                <button onclick="testAIRecognition()">测试AI识别</button>
+                <div id="imageTestResult" class="log">选择图片后点击测试...</div>
+            </div>
+
+            <div class="test-section">
+                <h3>🚀 快速访问</h3>
+                <button onclick="openApp()" class="success">打开健身应用</button>
+                <button onclick="openCheckIn()" class="success">直接打开打卡页面</button>
+                <button onclick="openDevTools()">打开开发者工具</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <h2>📊 测试结果</h2>
+        <div id="testResults" class="log">等待测试...</div>
+    </div>
+
+    <script>
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const logElement = document.getElementById('testResults');
+            const icon = type === 'error' ? '❌' : type === 'success' ? '✅' : type === 'warning' ? '⚠️' : 'ℹ️';
+            logElement.textContent += `[${timestamp}] ${icon} ${message}\n`;
+            logElement.scrollTop = logElement.scrollHeight;
+        }
+
+        async function checkSystemStatus() {
+            const statusElement = document.getElementById('systemStatus');
+            statusElement.textContent = '正在检查系统状态...\n';
+            
+            try {
+                // 检查前端服务
+                const frontendResponse = await fetch('http://localhost:5174/');
+                const frontendStatus = frontendResponse.ok;
+                
+                // 检查后端服务
+                const backendResponse = await fetch('http://localhost:3000/health');
+                const backendStatus = backendResponse.ok;
+                
+                let report = '🌐 系统状态报告:\n\n';
+                report += `前端服务 (5174): ${frontendStatus ? '✅ 正常' : '❌ 异常'}\n`;
+                report += `后端服务 (3000): ${backendStatus ? '✅ 正常' : '❌ 异常'}\n\n`;
+                
+                if (frontendStatus && backendStatus) {
+                    report += '🎉 所有服务运行正常！';
+                    statusElement.className = 'log success';
+                    log('系统状态检查完成：所有服务正常', 'success');
+                } else {
+                    report += '⚠️ 部分服务异常，请检查服务启动状态';
+                    statusElement.className = 'log warning';
+                    log('系统状态检查完成：部分服务异常', 'warning');
+                }
+                
+                statusElement.textContent = report;
+                
+            } catch (error) {
+                statusElement.textContent = `❌ 系统状态检查失败: ${error.message}`;
+                statusElement.className = 'log error';
+                log(`系统状态检查失败: ${error.message}`, 'error');
+            }
+        }
+
+        function checkCacheData() {
+            const statusElement = document.getElementById('cacheStatus');
+            try {
+                const storageData = localStorage.getItem('fitness-contract-storage');
+                if (!storageData) {
+                    statusElement.textContent = '✅ 没有找到健身应用的缓存数据';
+                    statusElement.className = 'log success';
+                    log('缓存检查：没有发现缓存数据', 'success');
+                    return;
+                }
+
+                const data = JSON.parse(storageData);
+                let report = '📊 缓存数据分析:\n\n';
+                let hasProblems = false;
+                
+                // 检查今日打卡
+                if (data.state?.todayCheckIns) {
+                    report += `今日打卡记录: ${data.state.todayCheckIns.length} 条\n`;
+                    data.state.todayCheckIns.forEach((checkIn, index) => {
+                        if (checkIn.aiResult && (checkIn.aiResult.includes('微信') || checkIn.aiResult.includes('支付'))) {
+                            report += `⚠️ 发现问题记录 #${index + 1}: ${checkIn.aiResult.substring(0, 50)}...\n`;
+                            hasProblems = true;
+                        }
+                    });
+                }
+
+                // 检查历史打卡
+                if (data.state?.checkInHistory) {
+                    report += `\n历史打卡记录: ${data.state.checkInHistory.length} 条\n`;
+                    let problemCount = 0;
+                    data.state.checkInHistory.forEach((checkIn, index) => {
+                        if (checkIn.aiResult && (checkIn.aiResult.includes('微信') || checkIn.aiResult.includes('支付'))) {
+                            problemCount++;
+                            if (problemCount <= 3) {
+                                report += `⚠️ 发现问题记录 #${index + 1}: ${checkIn.aiResult.substring(0, 50)}...\n`;
+                            }
+                            hasProblems = true;
+                        }
+                    });
+                    if (problemCount > 3) {
+                        report += `... 还有 ${problemCount - 3} 条包含问题的记录\n`;
+                    }
+                }
+
+                if (hasProblems) {
+                    report += '\n🔧 建议：点击"清理问题缓存"按钮清除这些记录';
+                    statusElement.className = 'log warning';
+                    log('缓存检查：发现问题记录', 'warning');
+                } else {
+                    report += '\n✅ 没有发现问题记录';
+                    statusElement.className = 'log success';
+                    log('缓存检查：没有发现问题记录', 'success');
+                }
+
+                statusElement.textContent = report;
+                
+            } catch (error) {
+                statusElement.textContent = `❌ 检查缓存时出错: ${error.message}`;
+                statusElement.className = 'log error';
+                log(`缓存检查失败: ${error.message}`, 'error');
+            }
+        }
+
+        function clearProblemCache() {
+            try {
+                const storageData = localStorage.getItem('fitness-contract-storage');
+                if (!storageData) {
+                    log('没有找到需要清理的缓存数据', 'info');
+                    return;
+                }
+
+                const data = JSON.parse(storageData);
+                let cleaned = false;
+
+                // 清理今日打卡中的问题记录
+                if (data.state?.todayCheckIns) {
+                    const originalCount = data.state.todayCheckIns.length;
+                    data.state.todayCheckIns = data.state.todayCheckIns.filter(checkIn => 
+                        !checkIn.aiResult || (!checkIn.aiResult.includes('微信') && !checkIn.aiResult.includes('支付'))
+                    );
+                    if (data.state.todayCheckIns.length < originalCount) {
+                        cleaned = true;
+                        log(`清理了 ${originalCount - data.state.todayCheckIns.length} 条今日问题记录`, 'success');
+                    }
+                }
+
+                // 清理历史打卡中的问题记录
+                if (data.state?.checkInHistory) {
+                    const originalCount = data.state.checkInHistory.length;
+                    data.state.checkInHistory = data.state.checkInHistory.filter(checkIn => 
+                        !checkIn.aiResult || (!checkIn.aiResult.includes('微信') && !checkIn.aiResult.includes('支付'))
+                    );
+                    if (data.state.checkInHistory.length < originalCount) {
+                        cleaned = true;
+                        log(`清理了 ${originalCount - data.state.checkInHistory.length} 条历史问题记录`, 'success');
+                    }
+                }
+
+                if (cleaned) {
+                    localStorage.setItem('fitness-contract-storage', JSON.stringify(data));
+                    log('问题缓存清理完成！', 'success');
+                    checkCacheData(); // 重新检查
+                } else {
+                    log('没有发现需要清理的问题记录', 'info');
+                }
+
+            } catch (error) {
+                log(`清理缓存时出错: ${error.message}`, 'error');
+            }
+        }
+
+        function clearAllCache() {
+            if (confirm('确定要清空所有健身应用的缓存数据吗？这将重置所有设置和记录。')) {
+                localStorage.removeItem('fitness-contract-storage');
+                log('所有缓存数据已清空', 'warning');
+                checkCacheData(); // 重新检查
+            }
+        }
+
+        async function testImageProcessing() {
+            const fileInput = document.getElementById('testImageInput');
+            const resultElement = document.getElementById('imageTestResult');
+            
+            if (!fileInput.files || fileInput.files.length === 0) {
+                resultElement.textContent = '❌ 请先选择一张图片';
+                return;
+            }
+
+            const file = fileInput.files[0];
+            resultElement.textContent = `正在测试图片处理...\n文件: ${file.name}\n大小: ${file.size} bytes\n类型: ${file.type}\n\n`;
+
+            try {
+                // 模拟前端的图片处理逻辑
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                const img = new Image();
+                
+                img.onload = () => {
+                    try {
+                        // 计算压缩后的尺寸
+                        const maxSize = 1024;
+                        let { width, height } = img;
+                        
+                        if (width > height) {
+                            if (width > maxSize) {
+                                height = (height * maxSize) / width;
+                                width = maxSize;
+                            }
+                        } else {
+                            if (height > maxSize) {
+                                width = (width * maxSize) / height;
+                                height = maxSize;
+                            }
+                        }
+                        
+                        canvas.width = width;
+                        canvas.height = height;
+                        ctx.drawImage(img, 0, 0, width, height);
+                        
+                        const dataUri = canvas.toDataURL('image/jpeg', 0.8);
+                        
+                        resultElement.textContent += `✅ 图片处理成功!\n`;
+                        resultElement.textContent += `原始尺寸: ${img.width}x${img.height}\n`;
+                        resultElement.textContent += `压缩尺寸: ${width}x${height}\n`;
+                        resultElement.textContent += `Data URI 长度: ${dataUri.length} 字符\n`;
+                        resultElement.textContent += `压缩率: ${((1 - dataUri.length / (file.size * 1.37)) * 100).toFixed(1)}%\n`;
+                        
+                        log(`图片处理测试成功: ${file.name}`, 'success');
+                        
+                    } catch (error) {
+                        resultElement.textContent += `❌ 图片处理失败: ${error.message}`;
+                        log(`图片处理测试失败: ${error.message}`, 'error');
+                    }
+                };
+                
+                img.onerror = () => {
+                    resultElement.textContent += '❌ 图片加载失败';
+                    log('图片处理测试失败: 图片加载失败', 'error');
+                };
+                
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    img.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+                
+            } catch (error) {
+                resultElement.textContent += `❌ 测试失败: ${error.message}`;
+                log(`图片处理测试失败: ${error.message}`, 'error');
+            }
+        }
+
+        async function testAIRecognition() {
+            const fileInput = document.getElementById('testImageInput');
+            const resultElement = document.getElementById('imageTestResult');
+            
+            if (!fileInput.files || fileInput.files.length === 0) {
+                resultElement.textContent = '❌ 请先选择一张图片';
+                return;
+            }
+
+            const file = fileInput.files[0];
+            resultElement.textContent += `\n正在测试AI识别...\n`;
+
+            try {
+                // 处理图片
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                const img = new Image();
+                
+                img.onload = async () => {
+                    try {
+                        const maxSize = 1024;
+                        let { width, height } = img;
+                        
+                        if (width > height) {
+                            if (width > maxSize) {
+                                height = (height * maxSize) / width;
+                                width = maxSize;
+                            }
+                        } else {
+                            if (height > maxSize) {
+                                width = (width * maxSize) / height;
+                                height = maxSize;
+                            }
+                        }
+                        
+                        canvas.width = width;
+                        canvas.height = height;
+                        ctx.drawImage(img, 0, 0, width, height);
+                        
+                        const dataUri = canvas.toDataURL('image/jpeg', 0.8);
+                        
+                        // 调用后端API
+                        const response = await fetch('http://localhost:3000/api/vision/analyze', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                imageUrl: dataUri,
+                                prompt: '这是一张食物照片，请识别图片中的食物种类、营养成分和大概的卡路里含量。请用中文回答，并尽量提供详细的营养信息。'
+                            })
+                        });
+
+                        if (response.ok) {
+                            const result = await response.json();
+                            resultElement.textContent += `✅ AI识别成功!\n`;
+                            resultElement.textContent += `识别结果: ${result.data?.description || '无结果'}\n`;
+                            log(`AI识别测试成功: ${file.name}`, 'success');
+                        } else {
+                            const errorText = await response.text();
+                            resultElement.textContent += `❌ AI识别失败: ${response.status} ${errorText}\n`;
+                            log(`AI识别测试失败: ${response.status} ${errorText}`, 'error');
+                        }
+                        
+                    } catch (error) {
+                        resultElement.textContent += `❌ AI识别失败: ${error.message}\n`;
+                        log(`AI识别测试失败: ${error.message}`, 'error');
+                    }
+                };
+                
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    img.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+                
+            } catch (error) {
+                resultElement.textContent += `❌ 测试失败: ${error.message}\n`;
+                log(`AI识别测试失败: ${error.message}`, 'error');
+            }
+        }
+
+        function openApp() {
+            window.open('http://localhost:5174', '_blank');
+        }
+
+        function openCheckIn() {
+            window.open('http://localhost:5174/#/checkin', '_blank');
+        }
+
+        function openDevTools() {
+            alert('请按 F12 或右键选择"检查"来打开开发者工具，然后查看控制台日志');
+        }
+
+        // 页面加载时自动检查
+        window.onload = function() {
+            log('AI识别问题完整修复测试工具已启动', 'info');
+            checkSystemStatus();
+            checkCacheData();
+        };
+    </script>
+</body>
+</html>

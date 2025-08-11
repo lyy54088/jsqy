@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>强制刷新修复</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            text-align: center;
+        }
+        .fix-button {
+            background: #ff4444;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 18px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 10px;
+        }
+        .fix-button:hover {
+            background: #cc3333;
+        }
+        .info {
+            background: #f0f8ff;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border-left: 4px solid #2196f3;
+        }
+        .success {
+            background: #e8f5e8;
+            color: #2e7d32;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔧 AI识别功能修复工具</h1>
+    
+    <div class="info">
+        <h3>问题诊断</h3>
+        <p>AI识别功能失败通常是由于浏览器缓存了旧版本的代码。</p>
+        <p>我们已经修复了图片处理逻辑，但需要强制刷新来应用修复。</p>
+    </div>
+
+    <div>
+        <h3>修复步骤</h3>
+        <button class="fix-button" onclick="clearCacheAndReload()">🚀 清除缓存并重新加载</button>
+        <button class="fix-button" onclick="openNewSession()">🔄 打开新的打卡页面</button>
+    </div>
+
+    <div id="status"></div>
+
+    <div class="info">
+        <h3>手动修复方法</h3>
+        <p>如果自动修复无效，请按以下步骤操作：</p>
+        <ol style="text-align: left;">
+            <li>按 <strong>Ctrl + Shift + R</strong> 强制刷新页面</li>
+            <li>或者按 <strong>F12</strong> 打开开发者工具</li>
+            <li>右键点击刷新按钮，选择"清空缓存并硬性重新加载"</li>
+            <li>重新访问打卡页面测试AI识别功能</li>
+        </ol>
+    </div>
+
+    <script>
+        function clearCacheAndReload() {
+            const status = document.getElementById('status');
+            status.innerHTML = '<div class="success">正在清除缓存...</div>';
+            
+            // 清除所有可能的缓存
+            if ('caches' in window) {
+                caches.keys().then(function(names) {
+                    for (let name of names) {
+                        caches.delete(name);
+                    }
+                });
+            }
+            
+            // 清除localStorage和sessionStorage
+            localStorage.clear();
+            sessionStorage.clear();
+            
+            // 添加时间戳强制刷新
+            setTimeout(() => {
+                const timestamp = new Date().getTime();
+                window.location.href = `http://localhost:5174/checkin?t=${timestamp}`;
+            }, 1000);
+        }
+        
+        function openNewSession() {
+            const status = document.getElementById('status');
+            status.innerHTML = '<div class="success">正在打开新的打卡页面...</div>';
+            
+            // 在新窗口中打开，避免缓存影响
+            const timestamp = new Date().getTime();
+            window.open(`http://localhost:5174/checkin?t=${timestamp}&nocache=true`, '_blank');
+        }
+        
+        // 页面加载时显示当前状态
+        window.onload = function() {
+            const status = document.getElementById('status');
+            status.innerHTML = `
+                <div class="info">
+                    <strong>当前时间:</strong> ${new Date().toLocaleString()}<br>
+                    <strong>前端服务:</strong> http://localhost:5174/<br>
+                    <strong>后端服务:</strong> http://localhost:3000/
+                </div>
+            `;
+        };
+    </script>
+</body>
+</html>

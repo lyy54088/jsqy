@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
+import { notificationService, NotificationType } from '@/lib/notification-service';
 
 // 用户信息接口
 export interface User {
@@ -32,9 +33,16 @@ export interface AICoach {
   config: {
     voiceEnabled: boolean;
     reminderFrequency: 'low' | 'medium' | 'high';
-    deepSeekEnabled: boolean;
-    deepSeekApiKey?: string;
   };
+}
+
+// 训练计划接口
+export interface WorkoutPlan {
+  planId: string;
+  intensity: string;
+  goal: string;
+  selectedDays: string[];
+  weeklyWorkoutDays: number;
 }
 
 // 契约接口
@@ -45,11 +53,20 @@ export interface Contract {
   amount: number;
   startDate: Date;
   endDate: Date;
-  status: 'active' | 'completed' | 'failed' | 'cancelled';
+  status: 'pending' | 'active' | 'completed' | 'failed' | 'cancelled';
   dailyTasks: string[];
   completedDays: number;
   violationDays: number;
   remainingAmount: number;
+  paymentStatus: 'pending' | 'paid' | 'failed'; // 支付状态
+  paymentId?: string; // 支付订单ID
+  paidAt?: Date; // 支付时间
+  // 新的违约金机制字段
+  violationPenalty: number; // 每次违约扣除金额（保证金的1/3）
+  accumulatedPenalty: number; // 累计扣除的违约金
+  remainderAmount: number; // 除不尽的余数，到期后返还
+  // 训练计划
+  workoutPlan?: WorkoutPlan; // 可选的训练计划
 }
 
 // 打卡记录接口
@@ -93,6 +110,26 @@ export interface ChatSession {
   createdAt: Date;
 }
 
+// 通知配置接口
+export interface NotificationSettings {
+  enabled: boolean;
+  frequency: 'low' | 'medium' | 'high';
+  quietHours: {
+    start: string; // HH:MM 格式
+    end: string;   // HH:MM 格式
+  };
+  types: {
+    checkInReminder: boolean;
+    checkinReminder: boolean;
+    contractExpiry: boolean;
+    aiCoachMessage: boolean;
+    dailyMotivation: boolean;
+    mealReminder: boolean;
+    gymReminder: boolean;
+    proteinReminder: boolean;
+  };
+}
+
 // 应用状态接口
 interface AppState {
   // 用户相关
@@ -114,9 +151,10 @@ interface AppState {
   currentChatSession: ChatSession | null;
   chatHistory: ChatSession[];
   
-  // DeepSeek API 相关
-  deepSeekApiKey: string | null;
-  deepSeekEnabled: boolean;
+
+  
+  // 通知设置
+  notificationSettings: NotificationSettings;
   
   // UI状态
   loading: boolean;
@@ -125,10 +163,14 @@ interface AppState {
   // Actions
   setUser: (user: User) => void;
   logout: () => void;
+  resetAllData: () => void;
   setAICoach: (coach: AICoach) => void;
   createContract: (contract: Omit<Contract, 'id'>) => void;
+  updateContract: (contractId: string, updates: Partial<Contract>) => void;
   addCheckIn: (checkIn: Omit<CheckIn, 'id'>) => void;
   updateCheckInStatus: (checkInId: string, status: CheckIn['status']) => void;
+  // 违约处理函数
+  processViolation: (contractId: string) => void;
   
   // AI 对话相关方法
   initializeChatSession: (coachId: string) => void;
@@ -136,7 +178,9 @@ interface AppState {
   clearCurrentChatSession: () => void;
   loadChatSession: (sessionId: string) => void;
   
-  setDeepSeekConfig: (apiKey: string, enabled: boolean) => void;
+  // 通知设置相关方法
+  updateNotificationSettings: (settings: Partial<NotificationSettings>) => void;
+  
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
   clearError: () => void;
@@ -144,63 +188,47 @@ interface AppState {
 
 
 
+// 默认通知设置
+const getDefaultNotificationSettings = (): NotificationSettings => ({
+  enabled: true,
+  frequency: 'medium',
+  quietHours: {
+    start: '22:00',
+    end: '08:00'
+  },
+  types: {
+    checkInReminder: true,
+    checkinReminder: true,
+    contractExpiry: true,
+    aiCoachMessage: true,
+    dailyMotivation: true,
+    mealReminder: true,
+    gymReminder: true,
+    proteinReminder: true
+  }
+});
+
+// 默认初始状态
+const getInitialState = () => ({
+  user: null,
+  isLoggedIn: false,
+  aiCoach: null,
+  currentContract: null,
+  contractHistory: [],
+  todayCheckIns: [],
+  checkInHistory: [],
+  currentChatSession: null,
+  chatHistory: [],
+  notificationSettings: getDefaultNotificationSettings(),
+  loading: false,
+  error: null
+});
+
 // 创建store
 export const useAppStore = create<AppState>()(persist(
   (set, get) => ({
-    // 初始状态 - 添加测试数据
-    user: {
-      id: 'test-user-1',
-      phone: '13800138000',
-      nickname: '测试用户',
-      age: 25,
-      height: 170,
-      weight: 65,
-      fitnessGoal: 'lose_weight' as const,
-      createdAt: new Date(),
-      loginType: 'phone' as const
-    },
-    isLoggedIn: true,
-    aiCoach: {
-      id: 'test-coach-1',
-      name: '小美教练',
-      personality: 'gentle' as const,
-      avatar: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTUwIiBoZWlnaHQ9IjE1MCIgdmlld0JveD0iMCAwIDE1MCAxNTAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxjaXJjbGUgY3g9Ijc1IiBjeT0iNzUiIHI9Ijc1IiBmaWxsPSJ1cmwoI2dyYWRpZW50MCkiLz4KPGNpcmNsZSBjeD0iNzUiIGN5PSI2MCIgcj0iMjUiIGZpbGw9IndoaXRlIiBmaWxsLW9wYWNpdHk9IjAuOSIvPgo8ZWxsaXBzZSBjeD0iNzUiIGN5PSIxMjAiIHJ4PSI0MCIgcnk9IjMwIiBmaWxsPSJ3aGl0ZSIgZmlsbC1vcGFjaXR5PSIwLjkiLz4KPGRlZnM+CjxsaW5lYXJHcmFkaWVudCBpZD0iZ3JhZGllbnQwIiB4MT0iMCIgeTE9IjAiIHgyPSIxNTAiIHkyPSIxNTAiIGdyYWRpZW50VW5pdHM9InVzZXJTcGFjZU9uVXNlIj4KPHN0b3Agc3RvcC1jb2xvcj0iIzk5NTVGRiIvPgo8c3RvcCBvZmZzZXQ9IjEiIHN0b3AtY29sb3I9IiNGRjU1REQiLz4KPC9saW5lYXJHcmFkaWVudD4KPC9kZWZzPgo8L3N2Zz4K',
-      userId: 'test-user-1',
-      customIdentity: {
-        role: '专业健身教练',
-        description: '拥有5年健身指导经验，专注于科学健身和营养搭配',
-        speakingStyle: '温和耐心，善于鼓励，用简单易懂的方式解释专业知识',
-        traits: ['耐心', '专业', '鼓励', '温和']
-      },
-      config: {
-        voiceEnabled: true,
-        reminderFrequency: 'medium' as const,
-        deepSeekEnabled: false,
-        deepSeekApiKey: undefined
-      }
-    },
-    currentContract: {
-      id: 'test-contract-1',
-      userId: 'test-user-1',
-      type: 'normal' as const,
-      amount: 500,
-      startDate: new Date(),
-      endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30天后
-      status: 'active' as const,
-      dailyTasks: ['早餐', '午餐', '晚餐', '健身', '蛋白质'],
-      completedDays: 0,
-      violationDays: 0,
-      remainingAmount: 500
-    },
-    contractHistory: [],
-    todayCheckIns: [],
-    checkInHistory: [],
-    currentChatSession: null,
-    chatHistory: [],
-    deepSeekApiKey: null,
-    deepSeekEnabled: false,
-    loading: false,
-    error: null,
+    // 初始状态
+    ...getInitialState(),
     
     // Actions
     setUser: (user) => set({ user, isLoggedIn: true }),
@@ -213,6 +241,13 @@ export const useAppStore = create<AppState>()(persist(
       todayCheckIns: [],
     }),
     
+    resetAllData: () => {
+      // 清理localStorage
+      localStorage.removeItem('fitness-contract-storage');
+      // 重置所有状态到初始值
+      set(() => getInitialState());
+    },
+    
     setAICoach: (coach) => set({ aiCoach: coach }),
     
     createContract: (contractData) => {
@@ -223,6 +258,42 @@ export const useAppStore = create<AppState>()(persist(
       set({ 
         currentContract: contract,
         contractHistory: [...get().contractHistory, contract]
+      });
+    },
+    
+    updateContract: (contractId, updates) => {
+      set(state => {
+        const updatedContract = state.currentContract?.id === contractId 
+          ? { ...state.currentContract, ...updates }
+          : state.currentContract;
+        
+        const updatedHistory = state.contractHistory.map(contract =>
+          contract.id === contractId ? { ...contract, ...updates } : contract
+        );
+        
+        // 检查契约是否即将到期或已完成
+         if (updatedContract && updates.status) {
+           if (updates.status === 'completed') {
+             notificationService.sendNotification({
+               type: NotificationType.CONTRACT_COMPLETED,
+               title: '🎊 契约完成！',
+               body: `恭喜你成功完成了健身契约！`,
+               data: { contractId }
+             });
+           } else if (updates.status === 'failed') {
+             notificationService.sendNotification({
+               type: NotificationType.CONTRACT_EXPIRED,
+               title: '⏰ 契约已到期',
+               body: '你的健身契约已到期，快来查看结果吧！',
+               data: { contractId }
+             });
+           }
+         }
+        
+        return {
+          currentContract: updatedContract,
+          contractHistory: updatedHistory
+        };
       });
     },
     
@@ -259,7 +330,7 @@ export const useAppStore = create<AppState>()(persist(
             // 检查今天是否已经被计算过了（避免重复计算）
             const todayCheckInsBeforeThis = state.todayCheckIns.filter(c => c.status === 'approved');
             const wasAlreadyComplete = requiredTypes.every(type => 
-              todayCheckInsBeforeThis.some(c => c.type === type && c.status === 'approved')
+              todayCheckInsBeforeThis.some(c => c.type === type)
             );
             
             if (!wasAlreadyComplete) {
@@ -267,6 +338,14 @@ export const useAppStore = create<AppState>()(persist(
                 ...state.currentContract,
                 completedDays: state.currentContract.completedDays + 1
               };
+              
+              // 发送完成当日任务的通知
+               notificationService.sendNotification({
+                 type: NotificationType.DAILY_COMPLETE,
+                 title: '🎉 今日任务完成！',
+                 body: `恭喜你完成了今天的所有打卡任务，坚持了${updatedContract.completedDays}天！`,
+                 data: { contractId: state.currentContract.id }
+               });
             }
           }
         }
@@ -288,6 +367,56 @@ export const useAppStore = create<AppState>()(persist(
           checkIn.id === checkInId ? { ...checkIn, status } : checkIn
         )
       }));
+    },
+
+    // 违约处理函数
+    processViolation: (contractId) => {
+      set(state => {
+        const contract = state.currentContract?.id === contractId 
+          ? state.currentContract 
+          : state.contractHistory.find(c => c.id === contractId);
+        
+        if (!contract) return state;
+
+        // 计算违约金（保证金的1/3）
+        const penaltyAmount = Math.floor(contract.amount / 3);
+        const remainder = contract.amount % 3;
+        
+        // 更新契约数据
+        const updatedContract = {
+          ...contract,
+          violationDays: contract.violationDays + 1,
+          accumulatedPenalty: (contract.accumulatedPenalty || 0) + penaltyAmount,
+          remainingAmount: Math.max(0, contract.remainingAmount - penaltyAmount),
+          remainderAmount: remainder // 保存余数，到期后返还
+        };
+
+        // 发送违约通知
+        notificationService.sendNotification({
+          type: NotificationType.CONTRACT_VIOLATION,
+          title: '⚠️ 契约违约提醒',
+          body: `检测到违约行为，已扣除违约金¥${penaltyAmount}元，剩余保证金¥${updatedContract.remainingAmount}元`,
+          data: { contractId, penaltyAmount }
+        });
+
+        // 更新状态
+        if (state.currentContract?.id === contractId) {
+          return {
+            ...state,
+            currentContract: updatedContract,
+            contractHistory: state.contractHistory.map(c => 
+              c.id === contractId ? updatedContract : c
+            )
+          };
+        } else {
+          return {
+            ...state,
+            contractHistory: state.contractHistory.map(c => 
+              c.id === contractId ? updatedContract : c
+            )
+          };
+        }
+      });
     },
     
     // AI 对话相关方法
@@ -357,22 +486,16 @@ export const useAppStore = create<AppState>()(persist(
       }
     },
     
-    setDeepSeekConfig: (apiKey, enabled) => {
-      set({ deepSeekApiKey: apiKey, deepSeekEnabled: enabled });
-      // 同时更新 AI 教练的配置
-      const currentCoach = get().aiCoach;
-      if (currentCoach) {
-        set({
-          aiCoach: {
-            ...currentCoach,
-            config: {
-              ...currentCoach.config,
-              deepSeekEnabled: enabled,
-              deepSeekApiKey: apiKey
-            }
-          }
-        });
-      }
+
+    
+    // 通知设置相关方法
+    updateNotificationSettings: (settings) => {
+      set(state => ({
+        notificationSettings: {
+          ...state.notificationSettings,
+          ...settings
+        }
+      }));
     },
     
     setLoading: (loading) => set({ loading }),
@@ -393,21 +516,46 @@ export const useAppStore = create<AppState>()(persist(
       checkInHistory: state.checkInHistory,
       currentChatSession: state.currentChatSession,
       chatHistory: state.chatHistory,
-      deepSeekApiKey: state.deepSeekApiKey,
-      deepSeekEnabled: state.deepSeekEnabled,
+      notificationSettings: state.notificationSettings,
     }),
+    onRehydrateStorage: () => (state) => {
+      // 数据恢复后的处理逻辑
+      if (state) {
+        // 清理过期的今日打卡记录
+        const today = new Date().toDateString();
+        const todayCheckIns = state.todayCheckIns?.filter(
+          checkIn => {
+            if (!checkIn || !checkIn.timestamp) return false;
+            // 确保timestamp是Date对象
+            const timestamp = checkIn.timestamp instanceof Date 
+              ? checkIn.timestamp 
+              : new Date(checkIn.timestamp);
+            return timestamp.toDateString() === today;
+          }
+        ) || [];
+        state.todayCheckIns = todayCheckIns;
+        
+        // 确保所有checkIn对象都有必要的属性
+        state.checkInHistory = state.checkInHistory?.map(checkIn => ({
+          ...checkIn,
+          timestamp: checkIn.timestamp instanceof Date 
+            ? checkIn.timestamp 
+            : new Date(checkIn.timestamp),
+          status: checkIn.status || 'pending'
+        })) || [];
+      }
+    }
   }
 ));
 
 // 选择器
 export const useUser = () => useAppStore(state => state.user);
-export const useIsLoggedIn = () => useAppStore(state => state.isLoggedIn);
+export const useIsLoggedIn = () => useAppStore(state => !!state.user);
 export const useAICoach = () => useAppStore(state => state.aiCoach);
 export const useCurrentContract = () => useAppStore(state => state.currentContract);
 export const useTodayCheckIns = () => useAppStore(state => state.todayCheckIns);
 export const useCurrentChatSession = () => useAppStore(state => state.currentChatSession);
 export const useChatHistory = () => useAppStore(state => state.chatHistory);
-export const useDeepSeekApiKey = () => useAppStore(state => state.deepSeekApiKey);
-export const useDeepSeekEnabled = () => useAppStore(state => state.deepSeekEnabled);
+export const useNotificationSettings = () => useAppStore(state => state.notificationSettings);
 export const useLoading = () => useAppStore(state => state.loading);
 export const useError = () => useAppStore(state => state.error);

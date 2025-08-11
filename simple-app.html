@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>健身教练应用 - 简化版</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            text-align: center;
+        }
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+        }
+        .app-button {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 18px;
+            margin: 10px;
+            transition: background 0.3s;
+            width: 100%;
+            max-width: 300px;
+            display: block;
+            margin: 10px auto;
+            text-decoration: none;
+        }
+        .app-button:hover {
+            background: #2980b9;
+        }
+        .app-button.danger {
+            background: #e74c3c;
+        }
+        .app-button.danger:hover {
+            background: #c0392b;
+        }
+        .app-button.success {
+            background: #27ae60;
+        }
+        .app-button.success:hover {
+            background: #229954;
+        }
+        .status {
+            margin: 20px 0;
+            padding: 15px;
+            border-radius: 8px;
+            font-weight: bold;
+        }
+        .status.info {
+            background: #e8f4fd;
+            color: #3498db;
+            border: 1px solid #3498db;
+        }
+        .status.success {
+            background: #d5f4e6;
+            color: #27ae60;
+            border: 1px solid #27ae60;
+        }
+        .status.error {
+            background: #fdeaea;
+            color: #e74c3c;
+            border: 1px solid #e74c3c;
+        }
+        .iframe-container {
+            margin-top: 30px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            overflow: hidden;
+            height: 600px;
+            display: none;
+        }
+        .iframe-container iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🏋️‍♂️ 健身教练应用</h1>
+        
+        <div id="status" class="status info">
+            准备启动应用...
+        </div>
+
+        <button class="app-button danger" onclick="clearAllData()">
+            🧹 清除所有数据
+        </button>
+
+        <button class="app-button" onclick="openAppInNewTab()">
+            🚀 在新标签页打开应用
+        </button>
+
+        <button class="app-button" onclick="loadAppInFrame()">
+            📱 在此页面加载应用
+        </button>
+
+        <button class="app-button success" onclick="directToAuth()">
+            🔑 直接进入登录页面
+        </button>
+
+        <div id="iframeContainer" class="iframe-container">
+            <iframe id="appFrame" src=""></iframe>
+        </div>
+    </div>
+
+    <script>
+        let statusDiv = document.getElementById('status');
+
+        // 页面加载时检查状态
+        window.addEventListener('load', () => {
+            checkAppStatus();
+        });
+
+        async function checkAppStatus() {
+            statusDiv.innerHTML = '🔍 检查应用状态...';
+            
+            try {
+                const response = await fetch('http://localhost:5173/', { 
+                    method: 'HEAD',
+                    cache: 'no-cache'
+                });
+                
+                if (response.ok) {
+                    statusDiv.innerHTML = '✅ 应用服务器运行正常';
+                    statusDiv.className = 'status success';
+                } else {
+                    statusDiv.innerHTML = '⚠️ 应用服务器响应异常';
+                    statusDiv.className = 'status error';
+                }
+            } catch (error) {
+                statusDiv.innerHTML = '❌ 无法连接到应用服务器，请确保开发服务器正在运行';
+                statusDiv.className = 'status error';
+            }
+        }
+
+        async function clearAllData() {
+            statusDiv.innerHTML = '🧹 正在清除所有数据...';
+            statusDiv.className = 'status info';
+
+            try {
+                // 清除Service Worker
+                if ('serviceWorker' in navigator) {
+                    const registrations = await navigator.serviceWorker.getRegistrations();
+                    for (const registration of registrations) {
+                        await registration.unregister();
+                    }
+                }
+
+                // 清除缓存
+                if ('caches' in window) {
+                    const cacheNames = await caches.keys();
+                    for (const cacheName of cacheNames) {
+                        await caches.delete(cacheName);
+                    }
+                }
+
+                // 清除存储
+                localStorage.clear();
+                sessionStorage.clear();
+
+                statusDiv.innerHTML = '✅ 所有数据已清除';
+                statusDiv.className = 'status success';
+
+            } catch (error) {
+                statusDiv.innerHTML = `❌ 清除数据时出错: ${error.message}`;
+                statusDiv.className = 'status error';
+            }
+        }
+
+        function openAppInNewTab() {
+            statusDiv.innerHTML = '🚀 正在打开应用...';
+            statusDiv.className = 'status info';
+            
+            // 添加时间戳避免缓存
+            const url = `http://localhost:5173/?t=${Date.now()}`;
+            window.open(url, '_blank');
+        }
+
+        function loadAppInFrame() {
+            statusDiv.innerHTML = '📱 正在加载应用...';
+            statusDiv.className = 'status info';
+            
+            const iframeContainer = document.getElementById('iframeContainer');
+            const appFrame = document.getElementById('appFrame');
+            
+            // 添加时间戳避免缓存
+            appFrame.src = `http://localhost:5173/?t=${Date.now()}`;
+            iframeContainer.style.display = 'block';
+            
+            // 监听iframe加载
+            appFrame.onload = () => {
+                statusDiv.innerHTML = '✅ 应用已加载';
+                statusDiv.className = 'status success';
+            };
+            
+            appFrame.onerror = () => {
+                statusDiv.innerHTML = '❌ 应用加载失败';
+                statusDiv.className = 'status error';
+            };
+        }
+
+        function directToAuth() {
+            statusDiv.innerHTML = '🔑 正在跳转到登录页面...';
+            statusDiv.className = 'status info';
+            
+            // 直接跳转到认证页面
+            const url = `http://localhost:5173/auth?t=${Date.now()}`;
+            window.open(url, '_blank');
+        }
+
+        // 监听来自iframe的消息
+        window.addEventListener('message', (event) => {
+            if (event.origin !== 'http://localhost:5173') return;
+            
+            if (event.data.type === 'app-error') {
+                statusDiv.innerHTML = `❌ 应用错误: ${event.data.message}`;
+                statusDiv.className = 'status error';
+            } else if (event.data.type === 'app-loaded') {
+                statusDiv.innerHTML = '✅ 应用已成功加载';
+                statusDiv.className = 'status success';
+            }
+        });
+    </script>
+</body>
+</html>

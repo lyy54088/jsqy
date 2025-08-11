@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI识别缓存修复测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .success { background: #d4edda; border-color: #c3e6cb; }
+        .warning { background: #fff3cd; border-color: #ffeaa7; }
+        .error { background: #f8d7da; border-color: #f5c6cb; }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background: #0056b3; }
+        .log { 
+            background: #f8f9fa; 
+            padding: 10px; 
+            border-radius: 5px; 
+            font-family: monospace; 
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 AI识别缓存修复测试</h1>
+        
+        <div class="test-section">
+            <h3>📋 测试步骤</h3>
+            <ol>
+                <li>点击"检查当前缓存状态"查看localStorage中的数据</li>
+                <li>点击"清理问题缓存"清除包含"微信"的历史记录</li>
+                <li>前往应用的打卡页面测试上传图片</li>
+                <li>验证AI识别结果是否正确显示</li>
+            </ol>
+        </div>
+
+        <div class="test-section">
+            <h3>🔍 缓存检查</h3>
+            <button onclick="checkCurrentCache()">检查当前缓存状态</button>
+            <button onclick="clearProblemCache()">清理问题缓存</button>
+            <button onclick="clearAllCache()">清空所有缓存</button>
+            <div id="cacheStatus" class="log"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>🧪 测试结果</h3>
+            <div id="testResults" class="log">等待测试...</div>
+        </div>
+
+        <div class="test-section">
+            <h3>📱 快速访问</h3>
+            <button onclick="openApp()">打开健身应用</button>
+            <button onclick="openCheckIn()">直接打开打卡页面</button>
+        </div>
+    </div>
+
+    <script>
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const logElement = document.getElementById('testResults');
+            logElement.textContent += `[${timestamp}] ${message}\n`;
+            logElement.scrollTop = logElement.scrollHeight;
+        }
+
+        function checkCurrentCache() {
+            const statusElement = document.getElementById('cacheStatus');
+            try {
+                const storageData = localStorage.getItem('fitness-contract-storage');
+                if (!storageData) {
+                    statusElement.textContent = '✅ 没有找到健身应用的缓存数据';
+                    statusElement.className = 'log success';
+                    return;
+                }
+
+                const data = JSON.parse(storageData);
+                let report = '📊 缓存数据分析:\n\n';
+                
+                // 检查今日打卡
+                if (data.state?.todayCheckIns) {
+                    report += `今日打卡记录: ${data.state.todayCheckIns.length} 条\n`;
+                    data.state.todayCheckIns.forEach((checkIn, index) => {
+                        if (checkIn.aiResult && checkIn.aiResult.includes('微信')) {
+                            report += `⚠️ 发现问题记录 #${index + 1}: ${checkIn.aiResult}\n`;
+                        }
+                    });
+                }
+
+                // 检查历史打卡
+                if (data.state?.checkInHistory) {
+                    report += `\n历史打卡记录: ${data.state.checkInHistory.length} 条\n`;
+                    let wechatCount = 0;
+                    data.state.checkInHistory.forEach((checkIn, index) => {
+                        if (checkIn.aiResult && checkIn.aiResult.includes('微信')) {
+                            wechatCount++;
+                            if (wechatCount <= 3) { // 只显示前3条
+                                report += `⚠️ 发现问题记录 #${index + 1}: ${checkIn.aiResult}\n`;
+                            }
+                        }
+                    });
+                    if (wechatCount > 3) {
+                        report += `... 还有 ${wechatCount - 3} 条包含"微信"的记录\n`;
+                    }
+                }
+
+                statusElement.textContent = report;
+                statusElement.className = 'log warning';
+                
+            } catch (error) {
+                statusElement.textContent = `❌ 检查缓存时出错: ${error.message}`;
+                statusElement.className = 'log error';
+            }
+        }
+
+        function clearProblemCache() {
+            try {
+                const storageData = localStorage.getItem('fitness-contract-storage');
+                if (!storageData) {
+                    log('✅ 没有找到需要清理的缓存数据');
+                    return;
+                }
+
+                const data = JSON.parse(storageData);
+                let cleaned = false;
+
+                // 清理今日打卡中的问题记录
+                if (data.state?.todayCheckIns) {
+                    const originalCount = data.state.todayCheckIns.length;
+                    data.state.todayCheckIns = data.state.todayCheckIns.filter(checkIn => 
+                        !checkIn.aiResult || !checkIn.aiResult.includes('微信')
+                    );
+                    if (data.state.todayCheckIns.length < originalCount) {
+                        cleaned = true;
+                        log(`🧹 清理了 ${originalCount - data.state.todayCheckIns.length} 条今日问题记录`);
+                    }
+                }
+
+                // 清理历史打卡中的问题记录
+                if (data.state?.checkInHistory) {
+                    const originalCount = data.state.checkInHistory.length;
+                    data.state.checkInHistory = data.state.checkInHistory.filter(checkIn => 
+                        !checkIn.aiResult || !checkIn.aiResult.includes('微信')
+                    );
+                    if (data.state.checkInHistory.length < originalCount) {
+                        cleaned = true;
+                        log(`🧹 清理了 ${originalCount - data.state.checkInHistory.length} 条历史问题记录`);
+                    }
+                }
+
+                if (cleaned) {
+                    localStorage.setItem('fitness-contract-storage', JSON.stringify(data));
+                    log('✅ 问题缓存清理完成！');
+                } else {
+                    log('✅ 没有发现需要清理的问题记录');
+                }
+
+            } catch (error) {
+                log(`❌ 清理缓存时出错: ${error.message}`, 'error');
+            }
+        }
+
+        function clearAllCache() {
+            if (confirm('确定要清空所有健身应用的缓存数据吗？这将重置所有设置和记录。')) {
+                localStorage.removeItem('fitness-contract-storage');
+                log('🗑️ 所有缓存数据已清空');
+            }
+        }
+
+        function openApp() {
+            window.open('http://localhost:5174', '_blank');
+        }
+
+        function openCheckIn() {
+            window.open('http://localhost:5174/#/checkin', '_blank');
+        }
+
+        // 页面加载时自动检查缓存
+        window.onload = function() {
+            log('🚀 AI识别缓存修复测试工具已启动');
+            checkCurrentCache();
+        };
+    </script>
+</body>
+</html>

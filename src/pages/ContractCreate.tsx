@@ -18,7 +18,7 @@ const ContractCreate: React.FC = () => {
       icon: Shield,
       amount: 30,
       description: '适合初学者，温和的约束力',
-      features: ['30天挑战', '每日5次打卡', '违约扣除3元/次', 'AI温和提醒'],
+      features: ['30天挑战', '每日5次打卡', '违约扣除¥10/次', 'AI温和提醒'],
       color: 'from-blue-500 to-blue-600'
     },
     {
@@ -27,7 +27,7 @@ const ContractCreate: React.FC = () => {
       icon: Zap,
       amount: 90,
       description: '高强度约束，适合意志力较弱者',
-      features: ['30天挑战', '每日5次打卡', '违约扣除9元/次', 'AI严格监督', '好友监督'],
+      features: ['30天挑战', '每日5次打卡', '违约扣除¥30/次', 'AI严格监督', '好友监督'],
       color: 'from-red-500 to-red-600'
     },
     {
@@ -36,7 +36,7 @@ const ContractCreate: React.FC = () => {
       icon: Settings,
       amount: 0,
       description: '自由设置金额和规则',
-      features: ['自定义天数', '自定义保证金', '灵活违约规则', '个性化监督'],
+      features: ['自定义天数', '自定义保证金', '违约扣除1/3保证金', '个性化监督'],
       color: 'from-purple-500 to-purple-600'
     }
   ];
@@ -53,15 +53,30 @@ const ContractCreate: React.FC = () => {
       amount,
       startDate: new Date(),
       endDate: new Date(Date.now() + days * 24 * 60 * 60 * 1000),
-      status: 'active',
+      status: 'pending', // 设置为pending状态，等待支付
       dailyTasks: ['breakfast', 'lunch', 'dinner', 'gym', 'protein'],
       completedDays: 0,
       violationDays: 0,
-      remainingAmount: amount
+      remainingAmount: 0, // 支付前保证金为0
+      paymentStatus: 'pending',
+      // 新的违约金机制字段
+      violationPenalty: Math.floor(amount / 3), // 每次违约扣除金额（保证金的1/3）
+      accumulatedPenalty: 0, // 累计扣除的违约金
+      remainderAmount: amount % 3 // 除不尽的余数，到期后返还
     };
 
+    // 先创建契约（pending状态）
     createContract(contract);
-    navigate('/ai-coach/setup');
+
+    // 跳转到支付页面，传递契约数据
+    navigate('/payment', {
+      state: {
+        contractData: contract,
+        amount,
+        contractType: contractTypes.find(t => t.type === selectedType)?.name || '自定义契约',
+        duration
+      }
+    });
   };
 
   const selectedContract = contractTypes.find(t => t.type === selectedType);
@@ -215,10 +230,16 @@ const ContractCreate: React.FC = () => {
           <div className="mt-4 p-3 bg-white/20 rounded-lg">
             <p className="text-sm">
               <strong>违约规则：</strong>
-              {selectedType === 'normal' && '每次违约扣除3元'}
-              {selectedType === 'brave' && '每次违约扣除9元'}
-              {selectedType === 'custom' && '根据自定义规则执行'}
+              {selectedType === 'normal' && `每次违约扣除¥${Math.floor(contractTypes.find(t => t.type === 'normal')?.amount! / 3)}元（保证金的1/3）`}
+              {selectedType === 'brave' && `每次违约扣除¥${Math.floor(contractTypes.find(t => t.type === 'brave')?.amount! / 3)}元（保证金的1/3）`}
+              {selectedType === 'custom' && customAmount && `每次违约扣除¥${Math.floor(parseInt(customAmount) / 3)}元（保证金的1/3）`}
+              {selectedType === 'custom' && !customAmount && '每次违约扣除保证金的1/3'}
             </p>
+            {finalAmount > 0 && finalAmount % 3 !== 0 && (
+              <p className="text-xs mt-1 opacity-90">
+                除不尽的余数¥{finalAmount % 3}元将在契约完成后返还
+              </p>
+            )}
           </div>
         </div>
 
@@ -229,12 +250,10 @@ const ContractCreate: React.FC = () => {
           className="w-full bg-blue-600 text-white py-4 rounded-xl font-semibold text-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
         >
           <Target className="w-5 h-5" />
-          创建契约并设置AI教练
+          下一步：支付保证金
         </button>
         
-        <p className="text-xs text-gray-500 text-center leading-relaxed">
-          创建契约即表示您同意遵守契约条款。保证金将在契约期间被冻结，完成契约后全额返还。违约金将用于公益事业。
-        </p>
+        <p className="text-xs text-gray-500 text-center leading-relaxed">创建契约即表示您同意遵守契约条款。保证金将在契约期间被冻结，完成契约后全额返还。违约金40%将用于公益事业。</p>
       </div>
     </div>
   );

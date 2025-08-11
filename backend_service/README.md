@@ -1,6 +1,27 @@
 # 健身教练应用后端服务
 
-一个基于 Node.js + TypeScript + MongoDB 的现代化健身教练应用后端服务，提供用户管理、打卡记录、契约管理、AI教练对话等功能。
+一个基于 Node.js + TypeScript + MongoDB 的现代化健身教练应用后端服务，提供用户管理、打卡记录、契约管理、AI教练对话、保证金管理等功能。
+
+## 🏦 保证金管理系统
+
+新增的保证金管理系统提供完整的保证金购买、记录、退款和统计功能：
+
+### 功能特性
+- ✅ 保证金购买记录创建和管理
+- ✅ 支付状态跟踪（微信支付、支付宝）
+- ✅ 退款申请处理
+- ✅ 使用历史记录
+- ✅ 统计报表生成和Excel导出
+- ✅ 多渠道通知服务（短信、邮件、推送）
+
+### API 端点
+- `GET /api/v1/deposit/records` - 获取保证金记录列表
+- `POST /api/v1/deposit/records` - 创建保证金购买记录
+- `GET /api/v1/deposit/records/:id` - 获取保证金记录详情
+- `POST /api/v1/deposit/records/:id/refund` - 申请保证金退款
+- `GET /api/v1/deposit/statistics` - 获取保证金统计信息
+- `GET /api/v1/deposit/export` - 导出保证金记录表格
+- `POST /api/v1/deposit/callback` - 支付回调处理
 
 ## 🚀 快速开始
 
@@ -41,9 +62,9 @@ MONGODB_DB_NAME=fitness_coach
 JWT_SECRET=your_super_secret_jwt_key_here
 JWT_EXPIRES_IN=7d
 
-# DeepSeek API 配置
-DEEPSEEK_API_KEY=your_deepseek_api_key_here
-DEEPSEEK_API_URL=https://api.deepseek.com
+# AI服务配置 (如需要)
+# AI_API_KEY=your_ai_api_key_here
+# AI_API_URL=https://api.example.com
 ```
 
 ### 启动服务
@@ -257,7 +278,7 @@ docker run -p 3000:3000 \
 | `NODE_ENV` | 运行环境 | development | 否 |
 | `MONGODB_URI` | MongoDB连接字符串 | - | 是 |
 | `JWT_SECRET` | JWT密钥 | - | 是 |
-| `DEEPSEEK_API_KEY` | DeepSeek API密钥 | - | 是 |
+| `AI_API_KEY` | AI服务API密钥 | - | 否 |
 | `CORS_ORIGIN` | CORS允许的源 | http://localhost:5173 | 否 |
 
 ### 性能调优

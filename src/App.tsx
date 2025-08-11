@@ -1,20 +1,63 @@
+import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
-import { useIsLoggedIn } from "@/store";
+import { useIsLoggedIn, useUser, useCurrentContract, useAppStore } from "@/store";
 import Auth from "@/pages/Auth";
 import Dashboard from "@/pages/Dashboard";
 import ContractCreate from "@/pages/ContractCreate";
+import Payment from "@/pages/Payment";
 import AICoachSetup from "@/pages/AICoachSetup";
 import AICoachSettings from "@/pages/AICoachSettings";
 import CheckIn from "@/pages/CheckIn";
 import AICoach from "@/pages/AICoach";
 import History from "@/pages/History";
 import Profile from "@/pages/Profile";
-import DatabaseTest from "@/pages/DatabaseTest";
 import FoodAnalysis from "@/pages/FoodAnalysis";
 import Community from "@/pages/Community";
-import DeepSeekDebug from "@/pages/DeepSeekDebug";
-import QuickDeepSeekConfig from "@/pages/QuickDeepSeekConfig";
-import DeepSeekTest from "@/pages/DeepSeekTest";
+import NotificationSettings from "@/pages/NotificationSettings";
+import WorkoutPlan from "@/pages/WorkoutPlan";
+import WorkoutTutorial from "@/pages/WorkoutTutorial";
+
+
+import PWAInstaller from './components/PWAInstaller';
+import { registerServiceWorker, clearExpiredCache } from './utils/pwa';
+import { DataCleaner } from './utils/data-cleaner';
+import { notificationService } from './lib/notification-service';
+import './utils/dev-tools'; // 引入开发工具
+
+// 立即执行清理逻辑 - 在任何组件渲染之前
+(() => {
+  try {
+    const storageData = localStorage.getItem('fitness-contract-storage');
+    if (storageData) {
+      const data = JSON.parse(storageData);
+      const state = data.state;
+      
+      // 检查是否存在500元保证金但没有用户的情况
+      if (state?.currentContract && 
+          (state.currentContract.amount === 500 || state.currentContract.remainingAmount === 500) &&
+          !state?.user) {
+        console.warn('🚨 检测到500元保证金但没有用户，立即清理无效数据');
+        localStorage.clear();
+        sessionStorage.clear();
+        // 强制刷新页面
+        window.location.reload();
+      }
+      
+      // 检查其他无效状态
+      if (!state?.user && state?.currentContract) {
+        console.warn('🚨 检测到没有用户但有契约数据，立即清理');
+        localStorage.clear();
+        sessionStorage.clear();
+        window.location.reload();
+      }
+    }
+  } catch (error) {
+    console.error('立即清理检查出错，清理所有数据:', error);
+    localStorage.clear();
+    sessionStorage.clear();
+    window.location.reload();
+  }
+})();
 
 // 路由保护组件
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -29,8 +72,71 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
 }
 
 export default function App() {
+  const user = useUser();
+  const currentContract = useCurrentContract();
+  const { resetAllData } = useAppStore();
+
+  useEffect(() => {
+    registerServiceWorker();
+    clearExpiredCache();
+    
+    // 初始化通知服务
+    notificationService.initialize();
+    
+    // 使用数据清理工具检查并清理无效数据
+    const wasDataCleaned = DataCleaner.checkAndCleanInvalidData();
+    if (wasDataCleaned) {
+      // 如果清理了数据，刷新页面以确保状态重置
+      setTimeout(() => {
+        window.location.reload();
+      }, 100);
+    }
+  }, []);
+
+  // 全局状态一致性检查
+  useEffect(() => {
+    // 强制检查localStorage中的数据
+    const checkAndCleanInvalidData = () => {
+      try {
+        const storageData = localStorage.getItem('fitness-contract-storage');
+        if (storageData) {
+          const data = JSON.parse(storageData);
+          const state = data.state;
+          
+          // 检查是否有无效的契约数据（没有用户但有契约）
+          if (!state?.user && state?.currentContract) {
+            console.warn('检测到无效状态：没有用户但存在契约数据，正在清理...');
+            resetAllData();
+            return;
+          }
+          
+          // 检查是否有孤立的契约数据（契约存在但用户不匹配）
+          if (state?.user && state?.currentContract && 
+              state.currentContract.userId !== state.user.id) {
+            console.warn('检测到孤立的契约数据，正在清理...');
+            resetAllData();
+            return;
+          }
+        }
+      } catch (error) {
+        console.error('检查localStorage数据时出错:', error);
+        resetAllData();
+      }
+    };
+    
+    // 立即执行检查
+    checkAndCleanInvalidData();
+    
+    // 如果有契约但没有用户，清理数据
+    if (!user && currentContract) {
+      console.warn('应用启动时检测到无效状态：没有用户但存在契约数据，正在清理...');
+      resetAllData();
+    }
+  }, [user, currentContract, resetAllData]);
+
   return (
     <Router>
+      <PWAInstaller />
       <Routes>
         {/* 公开路由 */}
         <Route path="/auth" element={
@@ -52,7 +158,19 @@ export default function App() {
           </ProtectedRoute>
         } />
         
+        <Route path="/payment" element={
+          <ProtectedRoute>
+            <Payment />
+          </ProtectedRoute>
+        } />
+        
         <Route path="/setup" element={
+          <ProtectedRoute>
+            <AICoachSetup />
+          </ProtectedRoute>
+        } />
+        
+        <Route path="/ai-coach/setup" element={
           <ProtectedRoute>
             <AICoachSetup />
           </ProtectedRoute>
@@ -88,11 +206,7 @@ export default function App() {
           </ProtectedRoute>
         } />
         
-        <Route path="/database-test" element={
-          <ProtectedRoute>
-            <DatabaseTest />
-          </ProtectedRoute>
-        } />
+
         
         <Route path="/food-analysis" element={
           <ProtectedRoute>
@@ -106,23 +220,27 @@ export default function App() {
           </ProtectedRoute>
         } />
         
-        <Route path="/deepseek-debug" element={
+        <Route path="/settings/notifications" element={
           <ProtectedRoute>
-            <DeepSeekDebug />
+            <NotificationSettings />
           </ProtectedRoute>
         } />
         
-        <Route path="/quick-deepseek-config" element={
-           <ProtectedRoute>
-             <QuickDeepSeekConfig />
-           </ProtectedRoute>
-         } />
-         
-         <Route path="/deepseek-test" element={
-           <ProtectedRoute>
-             <DeepSeekTest />
-           </ProtectedRoute>
-         } />
+        <Route path="/workout-plan" element={
+          <ProtectedRoute>
+            <WorkoutPlan />
+          </ProtectedRoute>
+        } />
+        
+        <Route path="/workout-tutorial" element={
+          <ProtectedRoute>
+            <WorkoutTutorial />
+          </ProtectedRoute>
+        } />
+        
+
+        
+
         
         {/* 默认路由重定向 */}
         <Route path="/" element={<Navigate to="/auth" replace />} />

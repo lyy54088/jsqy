@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>微信支付 - 保证金缴纳</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #07c160 0%, #00d4aa 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .payment-container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+            max-width: 400px;
+            width: 100%;
+            animation: slideUp 0.5s ease-out;
+        }
+        
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #07c160 0%, #00d4aa 100%);
+            color: white;
+            padding: 30px 20px;
+            text-align: center;
+            position: relative;
+        }
+        
+        .back-button {
+            position: absolute;
+            left: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 18px;
+        }
+        
+        .back-button:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-50%) scale(1.1);
+        }
+        
+        .back-button:active {
+            transform: translateY(-50%) scale(0.95);
+        }
+        
+        .header h1 {
+            font-size: 1.8em;
+            margin-bottom: 5px;
+            font-weight: 300;
+        }
+        
+        .header p {
+            opacity: 0.9;
+            font-size: 0.9em;
+        }
+        
+        .payment-info {
+            padding: 30px 20px 20px;
+            text-align: center;
+        }
+        
+        .amount-section {
+            margin-bottom: 30px;
+        }
+        
+        .amount-label {
+            color: #666;
+            font-size: 0.9em;
+            margin-bottom: 10px;
+        }
+        
+        .amount-display {
+            font-size: 3em;
+            font-weight: bold;
+            color: #07c160;
+            margin-bottom: 5px;
+        }
+        
+        .amount-description {
+            color: #999;
+            font-size: 0.8em;
+        }
+        
+        .qr-section {
+            margin: 30px 0;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 15px;
+            border: 2px dashed #07c160;
+        }
+        
+        .qr-code {
+            width: 200px;
+            height: 200px;
+            margin: 0 auto 15px;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            background: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .qr-tips {
+            color: #07c160;
+            font-size: 0.9em;
+            font-weight: 500;
+            margin-bottom: 10px;
+        }
+        
+        .qr-instructions {
+            color: #666;
+            font-size: 0.8em;
+            line-height: 1.5;
+        }
+        
+        .payment-steps {
+            background: #f8f9fa;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 10px;
+        }
+        
+        .payment-steps h3 {
+            color: #333;
+            font-size: 1em;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        
+        .step {
+            display: flex;
+            align-items: center;
+            margin-bottom: 12px;
+            font-size: 0.9em;
+            color: #666;
+        }
+        
+        .step-number {
+            background: #07c160;
+            color: white;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8em;
+            font-weight: bold;
+            margin-right: 12px;
+            flex-shrink: 0;
+        }
+        
+        .contract-info {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 10px;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        
+        .contract-info h4 {
+            color: #856404;
+            font-size: 0.9em;
+            margin-bottom: 10px;
+        }
+        
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 0.8em;
+        }
+        
+        .info-label {
+            color: #666;
+        }
+        
+        .info-value {
+            color: #333;
+            font-weight: 500;
+        }
+        
+        .actions {
+            padding: 20px;
+            display: flex;
+            gap: 10px;
+        }
+        
+        .btn {
+            flex: 1;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9em;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary {
+            background: #07c160;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #06ad56;
+            transform: translateY(-1px);
+        }
+        
+        .btn-secondary {
+            background: #f8f9fa;
+            color: #666;
+            border: 1px solid #ddd;
+        }
+        
+        .btn-secondary:hover {
+            background: #e9ecef;
+        }
+        
+        .status-indicator {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #28a745;
+            color: white;
+            padding: 10px 15px;
+            border-radius: 20px;
+            font-size: 0.8em;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            z-index: 1000;
+        }
+        
+        .footer-note {
+            text-align: center;
+            padding: 15px 20px;
+            background: #f8f9fa;
+            color: #666;
+            font-size: 0.7em;
+            line-height: 1.4;
+        }
+        
+        @media (max-width: 480px) {
+            .payment-container {
+                margin: 10px;
+            }
+            
+            .amount-display {
+                font-size: 2.5em;
+            }
+            
+            .qr-code {
+                width: 180px;
+                height: 180px;
+            }
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+        
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #07c160;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .success-animation {
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+    </style>
+</head>
+<body>
+    <div class="status-indicator">
+        🔒 安全支付环境
+    </div>
+
+    <div class="payment-container">
+        <div class="header">
+            <button class="back-button" onclick="goBack()" title="返回">
+                ←
+            </button>
+            <h1>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" style="vertical-align: middle; margin-right: 8px;">
+                    <path d="M8.691 2.188C3.891 2.188 0 5.476 0 9.53c0 2.212 1.162 4.203 2.969 5.531L2.5 17.312l2.844-1.406c.75.187 1.547.281 2.347.281.25 0 .5-.016.75-.047-.156-.5-.234-1.016-.234-1.547 0-3.531 2.906-6.406 6.484-6.406.547 0 1.078.078 1.594.219C15.203 4.688 12.234 2.188 8.691 2.188zm-2.362 2.797c.406 0 .75.344.75.75s-.344.75-.75.75-.75-.344-.75-.75.344-.75.75-.75zm4.634 0c.406 0 .75.344.75.75s-.344.75-.75.75-.75-.344-.75-.75.344-.75.75-.75z"/>
+                    <path d="M15.312 9.375c-3.047 0-5.531 2.156-5.531 4.844 0 1.219.656 2.312 1.687 3.125l-.312 1.312 1.312-.656c.531.094 1.062.156 1.594.156 3.047 0 5.531-2.156 5.531-4.844s-2.484-4.937-5.281-4.937zm-1.5 2.469c.281 0 .5.219.5.5s-.219.5-.5.5-.5-.219-.5-.5.219-.5.5-.5zm3 0c.281 0 .5.219.5.5s-.219.5-.5.5-.5-.219-.5-.5.219-.5.5-.5z"/>
+                </svg>
+                微信支付
+            </h1>
+            <p>AI健身教练保证金缴纳</p>
+        </div>
+
+        <div class="payment-info">
+            <div class="amount-section">
+                <div class="amount-label">应付金额</div>
+                <div class="amount-display" id="paymentAmount">¥2,000</div>
+                <div class="amount-description">健身契约保证金</div>
+            </div>
+
+            <div class="contract-info">
+                <h4>📋 契约信息</h4>
+                <div class="info-row">
+                    <span class="info-label">契约编号:</span>
+                    <span class="info-value" id="contractId">CONTRACT_2024_001</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">用户姓名:</span>
+                    <span class="info-value" id="userName">张三</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">联系方式:</span>
+                    <span class="info-value" id="userPhone">138****8888</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">创建时间:</span>
+                    <span class="info-value" id="createTime">2024-12-30 15:30</span>
+                </div>
+            </div>
+
+            <div class="qr-section">
+                <div class="qr-code" id="qrCode">
+                    <!-- 真实微信支付二维码 -->
+                    <img src="微信图片_20250807205654.jpg" alt="微信收款二维码" width="180" height="180" style="border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                </div>
+                <div class="qr-tips">💡 使用微信扫一扫</div>
+                <div class="qr-instructions">
+                    打开微信，点击右上角"+"，选择"扫一扫"，对准二维码即可完成支付
+                </div>
+            </div>
+
+            <div class="payment-steps">
+                <h3>💳 支付步骤</h3>
+                <div class="step">
+                    <div class="step-number">1</div>
+                    <div>打开微信，点击右上角"+"号</div>
+                </div>
+                <div class="step">
+                    <div class="step-number">2</div>
+                    <div>选择"扫一扫"功能</div>
+                </div>
+                <div class="step">
+                    <div class="step-number">3</div>
+                    <div>对准上方二维码扫描</div>
+                </div>
+                <div class="step">
+                    <div class="step-number">4</div>
+                    <div>确认金额并完成支付</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="actions">
+            <button class="btn btn-secondary" onclick="checkPaymentStatus()">检查支付状态</button>
+            <button class="btn btn-primary" onclick="contactService()">联系客服</button>
+        </div>
+
+        <div class="footer-note">
+            ⚡ 支付完成后，系统将自动激活您的健身契约<br>
+            🔒 本页面采用SSL加密，确保支付安全<br>
+            📞 如有疑问，请联系客服：400-888-8888
+        </div>
+    </div>
+
+    <div class="loading" id="loadingIndicator">
+        <div class="spinner"></div>
+        <div>正在检查支付状态...</div>
+    </div>
+
+    <script>
+        // 返回主页
+        function goBack() {
+            // 直接返回到主页，避免循环跳转
+            window.location.href = '/';
+        }
+
+        // 页面加载时初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            initializePage();
+            startPaymentStatusCheck();
+        });
+
+        // 初始化页面数据
+        function initializePage() {
+            // 从URL参数或localStorage获取契约信息
+            const urlParams = new URLSearchParams(window.location.search);
+            const contractData = {
+                contractId: urlParams.get('contractId') || localStorage.getItem('contractId') || 'CONTRACT_2024_001',
+                userName: urlParams.get('userName') || localStorage.getItem('userName') || '张三',
+                userPhone: urlParams.get('userPhone') || localStorage.getItem('userPhone') || '138****8888',
+                amount: urlParams.get('amount') || localStorage.getItem('depositAmount') || '2000',
+                createTime: new Date().toLocaleString('zh-CN')
+            };
+
+            // 更新页面显示
+            document.getElementById('contractId').textContent = contractData.contractId;
+            document.getElementById('userName').textContent = contractData.userName;
+            document.getElementById('userPhone').textContent = contractData.userPhone;
+            document.getElementById('paymentAmount').textContent = `¥${contractData.amount}`;
+            document.getElementById('createTime').textContent = contractData.createTime;
+
+            // 保存到localStorage
+            Object.keys(contractData).forEach(key => {
+                localStorage.setItem(key, contractData[key]);
+            });
+        }
+
+        // 检查支付状态
+        async function checkPaymentStatus() {
+            const loadingIndicator = document.getElementById('loadingIndicator');
+            loadingIndicator.style.display = 'block';
+
+            try {
+                const contractId = document.getElementById('contractId').textContent;
+                
+                // 调用后端API检查支付状态
+                const response = await fetch(`http://localhost:3000/api/v1/deposit/records/${contractId}`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('authToken') || 'demo_token'}`
+                    }
+                });
+
+                const result = await response.json();
+                
+                if (result.success && result.data && result.data.status === 'success') {
+                    // 支付成功
+                    showPaymentSuccess({
+                        transactionId: result.data.transactionId || 'N/A',
+                        paymentTime: result.data.completedAt || new Date().toLocaleString()
+                    });
+                } else {
+                    // 支付未完成
+                    showPaymentPending();
+                }
+            } catch (error) {
+                console.error('检查支付状态失败:', error);
+                showError('检查支付状态失败，请稍后重试');
+            } finally {
+                loadingIndicator.style.display = 'none';
+            }
+        }
+
+        // 显示支付成功
+        function showPaymentSuccess(paymentData) {
+            const container = document.querySelector('.payment-container');
+            container.classList.add('success-animation');
+            
+            // 更新状态指示器
+            const statusIndicator = document.querySelector('.status-indicator');
+            statusIndicator.innerHTML = '✅ 支付成功';
+            statusIndicator.style.background = '#28a745';
+
+            // 显示成功消息
+            alert(`🎉 支付成功！\n\n交易号：${paymentData.transactionId}\n支付时间：${paymentData.paymentTime}\n\n您的健身契约已激活，祝您健身愉快！`);
+
+            // 3秒后跳转到主页
+            setTimeout(() => {
+                window.location.href = '/';
+            }, 3000);
+        }
+
+        // 显示支付待处理
+        function showPaymentPending() {
+            alert('💡 支付尚未完成\n\n请使用微信扫描二维码完成支付，或稍后再次检查支付状态。');
+        }
+
+        // 显示错误信息
+        function showError(message) {
+            alert(`❌ ${message}`);
+        }
+
+        // 联系客服
+        function contactService() {
+            const message = `您好，我需要咨询保证金支付相关问题。\n\n契约编号：${document.getElementById('contractId').textContent}\n用户姓名：${document.getElementById('userName').textContent}\n支付金额：${document.getElementById('paymentAmount').textContent}`;
+            
+            // 可以集成客服系统或跳转到客服页面
+            if (confirm('是否要联系客服？\n\n将为您转接到客服页面')) {
+                // 这里可以集成在线客服系统
+                window.open('tel:400-888-8888');
+            }
+        }
+
+        // 自动检查支付状态
+        function startPaymentStatusCheck() {
+            // 每30秒自动检查一次支付状态
+            setInterval(async () => {
+                try {
+                    const contractId = document.getElementById('contractId').textContent;
+                    const response = await fetch(`http://localhost:3000/api/v1/deposit/records/${contractId}`, {
+                        method: 'GET',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${localStorage.getItem('authToken') || 'demo_token'}`
+                        }
+                    });
+
+                    const result = await response.json();
+                    
+                    if (result.success && result.data && result.data.status === 'success') {
+                        showPaymentSuccess({
+                            transactionId: result.data.transactionId || 'N/A',
+                            paymentTime: result.data.completedAt || new Date().toLocaleString()
+                        });
+                    }
+                } catch (error) {
+                    console.log('自动检查支付状态失败:', error);
+                }
+            }, 30000); // 30秒检查一次
+        }
+
+        // 页面可见性变化时检查支付状态
+        document.addEventListener('visibilitychange', function() {
+            if (!document.hidden) {
+                // 页面重新可见时检查支付状态
+                setTimeout(checkPaymentStatus, 1000);
+            }
+        });
+
+        // 处理页面刷新
+        window.addEventListener('beforeunload', function(e) {
+            // 保存当前状态
+            const contractId = document.getElementById('contractId').textContent;
+            localStorage.setItem('lastPaymentCheck', Date.now());
+            localStorage.setItem('currentContractId', contractId);
+        });
+    </script>
+</body>
+</html>

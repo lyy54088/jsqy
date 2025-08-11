@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard调试工具</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin: 20px 0;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .button {
+            background: #007AFF;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 5px;
+            font-size: 14px;
+        }
+        .button:hover {
+            background: #0056CC;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 6px;
+            margin: 10px 0;
+        }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .warning { background: #fff3cd; color: #856404; }
+        .info { background: #d1ecf1; color: #0c5460; }
+        pre {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 6px;
+            overflow-x: auto;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔧 Dashboard 调试工具</h1>
+    
+    <div class="card">
+        <h2>📊 应用状态检查</h2>
+        <button class="button" onclick="checkAppState()">检查应用状态</button>
+        <button class="button" onclick="checkLocalStorage()">检查 LocalStorage</button>
+        <button class="button" onclick="testNavigation()">测试路由跳转</button>
+        <div id="status"></div>
+    </div>
+    
+    <div class="card">
+        <h2>🚀 快速操作</h2>
+        <button class="button" onclick="quickLogin()">快速登录</button>
+        <button class="button" onclick="clearAllData()">清理所有数据</button>
+        <button class="button" onclick="openDashboard()">打开 Dashboard</button>
+        <button class="button" onclick="openAuth()">打开登录页</button>
+    </div>
+    
+    <div class="card">
+        <h2>📝 调试日志</h2>
+        <button class="button" onclick="clearLogs()">清理日志</button>
+        <pre id="logs"></pre>
+    </div>
+
+    <script>
+        let logs = [];
+        
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            logs.push(`[${timestamp}] ${message}`);
+            updateLogs();
+            console.log(message);
+        }
+        
+        function updateLogs() {
+            document.getElementById('logs').textContent = logs.slice(-20).join('\n');
+        }
+        
+        function clearLogs() {
+            logs = [];
+            updateLogs();
+        }
+        
+        function showStatus(message, type = 'info') {
+            const statusDiv = document.getElementById('status');
+            statusDiv.innerHTML = `<div class="status ${type}">${message}</div>`;
+        }
+        
+        function checkAppState() {
+            log('开始检查应用状态...');
+            
+            // 检查应用是否在运行
+            fetch('http://localhost:5173')
+                .then(response => {
+                    if (response.ok) {
+                        log('✅ 应用服务器运行正常');
+                        showStatus('应用服务器运行正常', 'success');
+                        
+                        // 打开应用并检查状态
+                        const appWindow = window.open('http://localhost:5173', '_blank');
+                        
+                        setTimeout(() => {
+                            try {
+                                // 尝试访问应用的状态
+                                if (appWindow && !appWindow.closed) {
+                                    log('✅ 应用页面已打开');
+                                } else {
+                                    log('❌ 无法打开应用页面');
+                                }
+                            } catch (error) {
+                                log(`❌ 检查应用状态时出错: ${error.message}`);
+                            }
+                        }, 2000);
+                    } else {
+                        log('❌ 应用服务器响应异常');
+                        showStatus('应用服务器响应异常', 'error');
+                    }
+                })
+                .catch(error => {
+                    log(`❌ 无法连接到应用服务器: ${error.message}`);
+                    showStatus('无法连接到应用服务器，请确保开发服务器正在运行', 'error');
+                });
+        }
+        
+        function checkLocalStorage() {
+            log('检查 LocalStorage 数据...');
+            
+            try {
+                const storageData = localStorage.getItem('fitness-contract-storage');
+                if (storageData) {
+                    const data = JSON.parse(storageData);
+                    const state = data.state;
+                    
+                    log(`用户数据: ${state.user ? '已登录' : '未登录'}`);
+                    log(`契约数据: ${state.currentContract ? '存在' : '不存在'}`);
+                    log(`AI教练: ${state.aiCoach ? '已设置' : '未设置'}`);
+                    
+                    if (state.user) {
+                        log(`用户信息: ${state.user.nickname} (${state.user.phone})`);
+                    }
+                    
+                    if (state.currentContract) {
+                        log(`契约状态: ${state.currentContract.paymentStatus}`);
+                        log(`契约类型: ${state.currentContract.type}`);
+                    }
+                    
+                    showStatus('LocalStorage 数据检查完成，详见日志', 'success');
+                } else {
+                    log('❌ 没有找到 LocalStorage 数据');
+                    showStatus('没有找到应用数据，用户可能未登录', 'warning');
+                }
+            } catch (error) {
+                log(`❌ 解析 LocalStorage 数据时出错: ${error.message}`);
+                showStatus('LocalStorage 数据损坏', 'error');
+            }
+        }
+        
+        function testNavigation() {
+            log('测试路由跳转...');
+            
+            const routes = [
+                '/auth',
+                '/dashboard', 
+                '/contract/create',
+                '/checkin',
+                '/history',
+                '/profile',
+                '/community'
+            ];
+            
+            routes.forEach(route => {
+                const url = `http://localhost:5173${route}`;
+                log(`测试路由: ${route}`);
+                
+                fetch(url)
+                    .then(response => {
+                        if (response.ok) {
+                            log(`✅ 路由 ${route} 可访问`);
+                        } else {
+                            log(`❌ 路由 ${route} 响应异常`);
+                        }
+                    })
+                    .catch(error => {
+                        log(`❌ 路由 ${route} 测试失败: ${error.message}`);
+                    });
+            });
+            
+            showStatus('路由测试进行中，详见日志', 'info');
+        }
+        
+        function quickLogin() {
+            log('执行快速登录...');
+            
+            const testUser = {
+                id: 'test-user-' + Date.now(),
+                phone: '13800138000',
+                nickname: '测试用户',
+                age: 25,
+                height: 170,
+                weight: 65,
+                fitnessGoal: 'lose_weight',
+                createdAt: new Date()
+            };
+            
+            const appData = {
+                state: {
+                    user: testUser,
+                    isLoggedIn: true,
+                    aiCoach: null,
+                    currentContract: null,
+                    contractHistory: [],
+                    todayCheckIns: [],
+                    checkInHistory: [],
+                currentChatSession: null,
+                chatHistory: [],
+                    loading: false,
+                    error: null
+                },
+                version: 0
+            };
+            
+            localStorage.setItem('fitness-contract-storage', JSON.stringify(appData));
+            log('✅ 快速登录完成');
+            showStatus('快速登录完成，请刷新应用页面', 'success');
+        }
+        
+        function clearAllData() {
+            log('清理所有数据...');
+            localStorage.removeItem('fitness-contract-storage');
+            log('✅ 所有数据已清理');
+            showStatus('所有数据已清理，请刷新应用页面', 'success');
+        }
+        
+        function openDashboard() {
+            log('打开 Dashboard...');
+            window.open('http://localhost:5173/dashboard', '_blank');
+        }
+        
+        function openAuth() {
+            log('打开登录页...');
+            window.open('http://localhost:5173/auth', '_blank');
+        }
+        
+        // 页面加载时自动检查状态
+        window.onload = function() {
+            log('调试工具已加载');
+            checkLocalStorage();
+        };
+    </script>
+</body>
+</html>

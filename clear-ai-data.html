@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>清理AI识别数据</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .button {
+            background: #007AFF;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 8px;
+            transition: background 0.2s;
+        }
+        .button:hover {
+            background: #0056CC;
+        }
+        .button.danger {
+            background: #FF3B30;
+        }
+        .button.danger:hover {
+            background: #D70015;
+        }
+        .button.success {
+            background: #34C759;
+        }
+        .log-container {
+            background: #1a1a1a;
+            color: #00ff00;
+            padding: 16px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            max-height: 400px;
+            overflow-y: auto;
+            margin-top: 16px;
+        }
+        .status {
+            padding: 12px;
+            border-radius: 8px;
+            margin: 8px 0;
+            font-weight: bold;
+        }
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .status.warning {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+        .data-preview {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 16px;
+            margin: 16px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>🧹 清理AI识别数据工具</h1>
+        <p>这个工具可以帮你清理浏览器中保存的AI识别相关数据，解决"为什么还是会进行AI分析"的问题。</p>
+        
+        <div id="status"></div>
+        
+        <h3>🔍 检查当前数据</h3>
+        <button class="button" onclick="checkCurrentData()">检查localStorage数据</button>
+        <button class="button" onclick="analyzeAIData()">分析AI识别数据</button>
+        
+        <div id="dataPreview"></div>
+        
+        <h3>🧹 清理操作</h3>
+        <button class="button danger" onclick="clearAIData()">清理AI识别数据</button>
+        <button class="button danger" onclick="clearAllCheckInHistory()">清理所有打卡历史</button>
+        <button class="button danger" onclick="clearAllData()">清理所有应用数据</button>
+        
+        <h3>🔄 重置操作</h3>
+        <button class="button success" onclick="createCleanUser()">创建干净的测试用户</button>
+        <button class="button" onclick="refreshApp()">刷新应用页面</button>
+    </div>
+    
+    <div class="card">
+        <h2>📝 操作日志</h2>
+        <button class="button" onclick="clearLogs()">清空日志</button>
+        <div id="logContainer" class="log-container"></div>
+    </div>
+
+    <script>
+        let logCount = 0;
+        
+        function log(message, type = 'info') {
+            logCount++;
+            const timestamp = new Date().toLocaleTimeString();
+            const logContainer = document.getElementById('logContainer');
+            const color = type === 'error' ? '#ff6b6b' : type === 'success' ? '#51cf66' : type === 'warning' ? '#ffd43b' : '#00ff00';
+            
+            logContainer.innerHTML += `<div style="color: ${color}">[${timestamp}] ${logCount}: ${message}</div>`;
+            logContainer.scrollTop = logContainer.scrollHeight;
+        }
+        
+        function clearLogs() {
+            document.getElementById('logContainer').innerHTML = '';
+            logCount = 0;
+            log('日志已清除', 'info');
+        }
+        
+        function showStatus(message, type = 'info') {
+            const statusDiv = document.getElementById('status');
+            statusDiv.innerHTML = `<div class="status ${type}">${message}</div>`;
+            log(`状态: ${message}`, type);
+        }
+        
+        function checkCurrentData() {
+            log('开始检查localStorage数据...', 'info');
+            
+            try {
+                const storageData = localStorage.getItem('fitness-contract-storage');
+                
+                if (!storageData) {
+                    showStatus('✅ localStorage中没有应用数据', 'success');
+                    document.getElementById('dataPreview').innerHTML = '<div class="data-preview">没有找到应用数据</div>';
+                    return;
+                }
+                
+                const data = JSON.parse(storageData);
+                log('找到localStorage数据，正在分析...', 'info');
+                
+                // 显示数据预览
+                document.getElementById('dataPreview').innerHTML = 
+                    `<div class="data-preview">${JSON.stringify(data, null, 2)}</div>`;
+                
+                // 分析数据结构
+                const state = data.state;
+                if (state) {
+                    log(`用户: ${state.user ? state.user.nickname : '未登录'}`, 'info');
+                    log(`打卡历史数量: ${state.checkInHistory ? state.checkInHistory.length : 0}`, 'info');
+                    log(`契约历史数量: ${state.contractHistory ? state.contractHistory.length : 0}`, 'info');
+                    
+                    if (state.checkInHistory && state.checkInHistory.length > 0) {
+                        const aiResults = state.checkInHistory.filter(checkIn => 
+                            checkIn.aiResult && checkIn.aiResult.recognized
+                        );
+                        log(`包含AI识别结果的打卡: ${aiResults.length}`, aiResults.length > 0 ? 'warning' : 'success');
+                        
+                        if (aiResults.length > 0) {
+                            showStatus(`⚠️ 发现 ${aiResults.length} 条包含AI识别结果的打卡记录`, 'warning');
+                        } else {
+                            showStatus('✅ 没有发现AI识别结果', 'success');
+                        }
+                    } else {
+                        showStatus('✅ 没有打卡历史记录', 'success');
+                    }
+                } else {
+                    showStatus('❌ 数据格式异常', 'error');
+                }
+                
+            } catch (error) {
+                log(`检查数据时出错: ${error.message}`, 'error');
+                showStatus(`❌ 检查数据失败: ${error.message}`, 'error');
+            }
+        }
+        
+        function analyzeAIData() {
+            log('开始分析AI识别数据...', 'info');
+            
+            try {
+                const storageData = localStorage.getItem('fitness-contract-storage');
+                
+                if (!storageData) {
+                    showStatus('✅ 没有数据需要分析', 'success');
+                    return;
+                }
+                
+                const data = JSON.parse(storageData);
+                const checkInHistory = data.state?.checkInHistory || [];
+                
+                log(`总打卡记录数: ${checkInHistory.length}`, 'info');
+                
+                const aiResults = [];
+                checkInHistory.forEach((checkIn, index) => {
+                    if (checkIn.aiResult) {
+                        aiResults.push({
+                            index,
+                            type: checkIn.type,
+                            recognized: checkIn.aiResult.recognized,
+                            confidence: checkIn.aiResult.confidence,
+                            description: checkIn.aiResult.description,
+                            timestamp: checkIn.timestamp
+                        });
+                    }
+                });
+                
+                log(`包含AI结果的记录: ${aiResults.length}`, 'info');
+                
+                aiResults.forEach((result, i) => {
+                    log(`记录${i + 1}: ${result.type} - ${result.description} (置信度: ${result.confidence})`, 
+                        result.recognized ? 'warning' : 'info');
+                });
+                
+                if (aiResults.length > 0) {
+                    showStatus(`🔍 分析完成：发现 ${aiResults.length} 条AI识别记录`, 'warning');
+                } else {
+                    showStatus('✅ 分析完成：没有发现AI识别记录', 'success');
+                }
+                
+            } catch (error) {
+                log(`分析AI数据时出错: ${error.message}`, 'error');
+                showStatus(`❌ 分析失败: ${error.message}`, 'error');
+            }
+        }
+        
+        function clearAIData() {
+            log('开始清理AI识别数据...', 'info');
+            
+            try {
+                const storageData = localStorage.getItem('fitness-contract-storage');
+                
+                if (!storageData) {
+                    showStatus('✅ 没有数据需要清理', 'success');
+                    return;
+                }
+                
+                const data = JSON.parse(storageData);
+                const checkInHistory = data.state?.checkInHistory || [];
+                
+                // 清理AI识别结果
+                const cleanedHistory = checkInHistory.map(checkIn => ({
+                    ...checkIn,
+                    aiResult: {
+                        recognized: false,
+                        confidence: 0,
+                        description: '手动打卡记录（已清理AI数据）'
+                    }
+                }));
+                
+                // 更新数据
+                data.state.checkInHistory = cleanedHistory;
+                localStorage.setItem('fitness-contract-storage', JSON.stringify(data));
+                
+                log(`已清理 ${checkInHistory.length} 条记录的AI识别数据`, 'success');
+                showStatus('✅ AI识别数据清理完成', 'success');
+                
+            } catch (error) {
+                log(`清理AI数据时出错: ${error.message}`, 'error');
+                showStatus(`❌ 清理失败: ${error.message}`, 'error');
+            }
+        }
+        
+        function clearAllCheckInHistory() {
+            log('开始清理所有打卡历史...', 'info');
+            
+            try {
+                const storageData = localStorage.getItem('fitness-contract-storage');
+                
+                if (!storageData) {
+                    showStatus('✅ 没有数据需要清理', 'success');
+                    return;
+                }
+                
+                const data = JSON.parse(storageData);
+                const originalCount = data.state?.checkInHistory?.length || 0;
+                
+                // 清空打卡历史
+                if (data.state) {
+                    data.state.checkInHistory = [];
+                    data.state.todayCheckIns = [];
+                }
+                
+                localStorage.setItem('fitness-contract-storage', JSON.stringify(data));
+                
+                log(`已清理 ${originalCount} 条打卡历史记录`, 'success');
+                showStatus('✅ 所有打卡历史已清理', 'success');
+                
+            } catch (error) {
+                log(`清理打卡历史时出错: ${error.message}`, 'error');
+                showStatus(`❌ 清理失败: ${error.message}`, 'error');
+            }
+        }
+        
+        function clearAllData() {
+            log('开始清理所有应用数据...', 'info');
+            
+            try {
+                localStorage.removeItem('fitness-contract-storage');
+                
+                // 清理其他相关数据
+                const keysToRemove = [];
+                for (let i = 0; i < localStorage.length; i++) {
+                    const key = localStorage.key(i);
+                    if (key && (key.includes('fitness') || key.includes('coach') || key.includes('notification'))) {
+                        keysToRemove.push(key);
+                    }
+                }
+                
+                keysToRemove.forEach(key => {
+                    localStorage.removeItem(key);
+                    log(`已删除: ${key}`, 'info');
+                });
+                
+                log('所有应用数据已清理', 'success');
+                showStatus('✅ 所有应用数据已清理', 'success');
+                
+            } catch (error) {
+                log(`清理所有数据时出错: ${error.message}`, 'error');
+                showStatus(`❌ 清理失败: ${error.message}`, 'error');
+            }
+        }
+        
+        function createCleanUser() {
+            log('创建干净的测试用户...', 'info');
+            
+            try {
+                const cleanUser = {
+                    id: 'clean-user-' + Date.now(),
+                    phone: '13800138000',
+                    nickname: '干净测试用户',
+                    age: 25,
+                    height: 170,
+                    weight: 65,
+                    fitnessGoal: 'lose_weight',
+                    createdAt: new Date().toISOString()
+                };
+                
+                const cleanData = {
+                    state: {
+                        user: cleanUser,
+                        isLoggedIn: true,
+                        aiCoach: null,
+                        currentContract: null,
+                        contractHistory: [],
+                        todayCheckIns: [],
+                        checkInHistory: [], // 空的打卡历史
+                        currentChatSession: null,
+                        chatHistory: [],
+                        loading: false,
+                        error: null
+                    },
+                    version: 0
+                };
+                
+                localStorage.setItem('fitness-contract-storage', JSON.stringify(cleanData));
+                
+                log('干净的测试用户创建成功', 'success');
+                showStatus('✅ 干净的测试用户已创建，没有任何AI识别数据', 'success');
+                
+            } catch (error) {
+                log(`创建用户时出错: ${error.message}`, 'error');
+                showStatus(`❌ 创建用户失败: ${error.message}`, 'error');
+            }
+        }
+        
+        function refreshApp() {
+            log('刷新应用页面...', 'info');
+            
+            try {
+                // 打开新的应用窗口
+                window.open('http://localhost:5173', '_blank');
+                log('应用页面已在新窗口中打开', 'success');
+                showStatus('✅ 应用页面已刷新', 'success');
+                
+            } catch (error) {
+                log(`刷新应用时出错: ${error.message}`, 'error');
+                showStatus(`❌ 刷新失败: ${error.message}`, 'error');
+            }
+        }
+        
+        // 页面加载时的初始化
+        window.onload = function() {
+            log('AI数据清理工具已加载', 'info');
+            showStatus('🔧 请先检查当前数据，然后选择合适的清理操作', 'info');
+            
+            // 自动检查数据
+            setTimeout(checkCurrentData, 500);
+        };
+    </script>
+</body>
+</html>

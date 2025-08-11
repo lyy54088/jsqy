@@ -1,0 +1,47 @@
+<svg width="1280" height="720" viewBox="0 0 1280 720" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- 背景 -->
+  <rect width="1280" height="720" fill="#f8fafc"/>
+  
+  <!-- 头部导航 -->
+  <rect x="0" y="0" width="1280" height="80" fill="#3b82f6"/>
+  <text x="40" y="50" font-family="Arial" font-size="24" font-weight="bold" fill="white">健身教练 - 数据仪表板</text>
+  
+  <!-- 主要内容区域 -->
+  <rect x="40" y="120" width="1200" height="560" fill="white" rx="12" stroke="#e2e8f0" stroke-width="1"/>
+  
+  <!-- 统计卡片 -->
+  <rect x="80" y="160" width="280" height="120" fill="#dbeafe" rx="8"/>
+  <text x="100" y="190" font-family="Arial" font-size="16" font-weight="bold" fill="#1e40af">今日打卡</text>
+  <text x="100" y="240" font-family="Arial" font-size="32" font-weight="bold" fill="#3b82f6">3/5</text>
+  
+  <rect x="400" y="160" width="280" height="120" fill="#dcfce7" rx="8"/>
+  <text x="420" y="190" font-family="Arial" font-size="16" font-weight="bold" fill="#166534">本周目标</text>
+  <text x="420" y="240" font-family="Arial" font-size="32" font-weight="bold" fill="#16a34a">85%</text>
+  
+  <rect x="720" y="160" width="280" height="120" fill="#fef3c7" rx="8"/>
+  <text x="740" y="190" font-family="Arial" font-size="16" font-weight="bold" fill="#92400e">总训练时长</text>
+  <text x="740" y="240" font-family="Arial" font-size="32" font-weight="bold" fill="#d97706">24h</text>
+  
+  <!-- 图表区域 -->
+  <rect x="80" y="320" width="920" height="300" fill="#f1f5f9" rx="8"/>
+  <text x="100" y="350" font-family="Arial" font-size="18" font-weight="bold" fill="#334155">训练进度图表</text>
+  
+  <!-- 模拟图表线条 -->
+  <polyline points="120,500 200,450 280,420 360,380 440,360 520,340 600,320 680,300 760,280 840,260 920,240" 
+            stroke="#3b82f6" stroke-width="3" fill="none"/>
+  
+  <!-- 图表点 -->
+  <circle cx="120" cy="500" r="4" fill="#3b82f6"/>
+  <circle cx="280" cy="420" r="4" fill="#3b82f6"/>
+  <circle cx="440" cy="360" r="4" fill="#3b82f6"/>
+  <circle cx="600" cy="320" r="4" fill="#3b82f6"/>
+  <circle cx="760" cy="280" r="4" fill="#3b82f6"/>
+  <circle cx="920" cy="240" r="4" fill="#3b82f6"/>
+  
+  <!-- AI教练消息 -->
+  <rect x="1040" y="160" width="160" height="460" fill="#f0f9ff" rx="8" stroke="#0ea5e9" stroke-width="1"/>
+  <text x="1060" y="190" font-family="Arial" font-size="14" font-weight="bold" fill="#0c4a6e">AI教练建议</text>
+  <text x="1060" y="220" font-family="Arial" font-size="12" fill="#075985">今天的训练表现很棒！</text>
+  <text x="1060" y="240" font-family="Arial" font-size="12" fill="#075985">建议增加有氧运动</text>
+  <text x="1060" y="260" font-family="Arial" font-size="12" fill="#075985">时长15分钟。</text>
+</svg>

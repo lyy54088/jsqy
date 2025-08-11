@@ -1,8 +1,15 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Send, Mic, MicOff, Volume2, Settings, Sparkles } from 'lucide-react';
-import { useAICoach, useUser, useCurrentContract, useTodayCheckIns, useDeepSeekApiKey, useDeepSeekEnabled, useCurrentChatSession, useAppStore } from '@/store';
-import { initializeDeepSeek, FitnessCoachAI, type DeepSeekMessage } from '@/lib/deepseek-api';
+import { ArrowLeft, Send, Mic, MicOff, Volume2, VolumeX, Settings, Sparkles } from 'lucide-react';
+import { useAICoach, useUser, useCurrentContract, useTodayCheckIns, useCurrentChatSession, useAppStore } from '@/store';
+
+// Web Speech API 类型定义
+declare global {
+  interface Window {
+    SpeechRecognition: any;
+    webkitSpeechRecognition: any;
+  }
+}
 
 const AICoach: React.FC = () => {
   const navigate = useNavigate();
@@ -10,17 +17,50 @@ const AICoach: React.FC = () => {
   const user = useUser();
   const currentContract = useCurrentContract();
   const todayCheckIns = useTodayCheckIns();
-  const deepSeekApiKey = useDeepSeekApiKey();
-  const deepSeekEnabled = useDeepSeekEnabled();
   const currentChatSession = useCurrentChatSession();
   const { initializeChatSession, addChatMessage } = useAppStore();
 
   const [inputText, setInputText] = useState('');
   const [isListening, setIsListening] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
-  const [fitnessCoachAI, setFitnessCoachAI] = useState<FitnessCoachAI | null>(null);
+  const [isSpeaking, setIsSpeaking] = useState(false); // 新增：语音播放状态
+  const [currentSpeakingMessageId, setCurrentSpeakingMessageId] = useState<string | null>(null); // 当前播放的消息ID
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const isInitialized = useRef(false);
+
+  // 组件加载时确保停止所有语音播放
+  useEffect(() => {
+    // 强制停止所有语音播放
+    if (window.speechSynthesis) {
+      window.speechSynthesis.cancel();
+      setIsSpeaking(false);
+      setCurrentSpeakingMessageId(null);
+      console.log('组件加载时停止所有语音播放');
+    }
+
+    // 页面可见性变化时停止语音播放
+    const handleVisibilityChange = () => {
+      if (document.hidden && window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+        setIsSpeaking(false);
+        setCurrentSpeakingMessageId(null);
+        console.log('页面隐藏时停止语音播放');
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    // 组件卸载时清理
+    return () => {
+      if (window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+        setIsSpeaking(false);
+        setCurrentSpeakingMessageId(null);
+        console.log('组件卸载时停止语音播放');
+      }
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, []);
   
   // 自定义教练信息
   const [coachName, setCoachName] = useState('小美教练');
@@ -28,12 +68,6 @@ const AICoach: React.FC = () => {
 
   // 从当前会话获取消息列表
   const messages = currentChatSession?.messages || [];
-  
-  // 转换为 DeepSeek 消息格式
-  const conversationHistory: DeepSeekMessage[] = messages.map(msg => ({
-    role: msg.type === 'user' ? 'user' : 'assistant',
-    content: msg.content
-  }));
 
   // 获取欢迎消息
   const getWelcomeMessage = useCallback(() => {
@@ -203,61 +237,7 @@ const AICoach: React.FC = () => {
     }
   }, [aiCoach, user]);
 
-  // 初始化 DeepSeek API
-  useEffect(() => {
-    // 使用用户提供的 DeepSeek API key
-    const userApiKey = deepSeekApiKey || aiCoach?.config.deepSeekApiKey;
-    const apiKey = userApiKey;
-    
-    console.log('DeepSeek 初始化状态:', {
-      hasApiKey: !!apiKey,
-      deepSeekEnabled,
-      hasAiCoach: !!aiCoach,
-      hasUser: !!user
-    });
-    
-    if (apiKey && aiCoach && user && deepSeekEnabled) {
-      try {
-        const deepSeek = initializeDeepSeek(apiKey);
-        if (deepSeek) {
-          // 计算BMI和状态
-          const heightInM = user.height / 100;
-          const bmi = user.weight / (heightInM * heightInM);
-          const getBMIStatus = (bmi: number) => {
-            if (bmi < 18.5) return '偏瘦';
-            if (bmi < 24) return '正常';
-            if (bmi < 28) return '偏胖';
-            return '肥胖';
-          };
-          
-          const userContext = {
-            name: user.nickname,
-            goals: [user.fitnessGoal === 'lose_weight' ? '减重' : '增肌'],
-            currentProgress: currentContract ? `第${currentContract.completedDays}天` : '刚开始',
-            todayCheckIns: todayCheckIns.filter(c => c.status === 'approved').length,
-            totalCheckIns: 5,
-            // 身体信息
-            age: user.age,
-            height: user.height,
-            weight: user.weight,
-            bmi: parseFloat(bmi.toFixed(1)),
-            bmiStatus: getBMIStatus(bmi),
-            fitnessGoal: user.fitnessGoal
-          };
-          
-          const coachAI = new FitnessCoachAI(deepSeek, aiCoach.personality, userContext, aiCoach.customIdentity);
-          setFitnessCoachAI(coachAI);
-          console.log('DeepSeek AI 初始化成功');
-        }
-      } catch (error) {
-        console.error('初始化 DeepSeek API 失败:', error);
-        setFitnessCoachAI(null);
-      }
-    } else {
-      console.log('DeepSeek 未启用或配置不完整，使用本地回复');
-      setFitnessCoachAI(null);
-    }
-  }, [aiCoach?.id, aiCoach?.personality, aiCoach?.customIdentity, user?.id, deepSeekApiKey, deepSeekEnabled]);
+
 
   // 加载自定义教练信息
   useEffect(() => {
@@ -289,6 +269,9 @@ const AICoach: React.FC = () => {
         timestamp: new Date(),
         coachId: aiCoach.id
       });
+      
+      // 确保不自动播放欢迎消息
+      // 用户需要手动点击播放按钮
     }
   }, [currentChatSession, aiCoach, getWelcomeMessage, addChatMessage]);
 
@@ -314,15 +297,8 @@ const AICoach: React.FC = () => {
     });
     
     try {
-      let aiResponseContent = '';
-      
-      if (fitnessCoachAI && deepSeekEnabled) {
-        // 使用 DeepSeek API 生成回复
-        aiResponseContent = await fitnessCoachAI.getResponse(userMessageContent, conversationHistory);
-      } else {
-        // 降级到本地生成的回复
-        aiResponseContent = generateAIResponse(userMessageContent);
-      }
+      // 使用本地生成的回复
+      const aiResponseContent = generateAIResponse(userMessageContent);
       
       // 添加 AI 回复到全局状态
       addChatMessage({
@@ -331,13 +307,21 @@ const AICoach: React.FC = () => {
         timestamp: new Date(),
         coachId: aiCoach.id
       });
+      
+      // 移除自动播放语音功能 - 让用户手动控制
+      // if (aiCoach.config.voiceEnabled) {
+      //   setTimeout(() => {
+      //     handleSpeakMessage(aiResponseContent);
+      //   }, 500);
+      // }
     } catch (error) {
       console.error('获取AI回复失败:', error);
       
-      // 错误时使用本地生成的回复
+      // 错误时使用默认回复
+      const fallbackResponse = '抱歉，我现在无法回复，请稍后再试。';
       addChatMessage({
         type: 'coach',
-        content: generateAIResponse(userMessageContent),
+        content: fallbackResponse,
         timestamp: new Date(),
         coachId: aiCoach.id
       });
@@ -346,17 +330,151 @@ const AICoach: React.FC = () => {
     }
   };
 
-  // 语音输入（模拟）
-  const handleVoiceInput = () => {
-    setIsListening(!isListening);
-    
-    if (!isListening) {
-      // 模拟语音识别
-      setTimeout(() => {
-        setInputText('我今天感觉有点累，还要继续运动吗？');
-        setIsListening(false);
-      }, 2000);
+  // 语音播放功能 - 修改为支持暂停/停止和温柔小姐姐声音
+  const handleSpeakMessage = (text: string, messageId: string, userTriggered: boolean = true) => {
+    // 只允许用户主动触发的语音播放
+    if (!userTriggered) {
+      console.log('阻止非用户触发的语音播放');
+      return;
     }
+    
+    if (!aiCoach.config.voiceEnabled) {
+      console.log('语音功能已禁用');
+      return;
+    }
+    
+    // 如果正在播放同一条消息，则停止
+    if (isSpeaking && currentSpeakingMessageId === messageId) {
+      console.log('停止语音播放');
+      window.speechSynthesis.cancel();
+      setIsSpeaking(false);
+      setCurrentSpeakingMessageId(null);
+      return;
+    }
+    
+    // 停止当前播放的语音（如果有的话）
+    window.speechSynthesis.cancel();
+    console.log('用户触发语音播放:', text.substring(0, 50) + '...');
+    
+    // 创建语音合成实例
+    const utterance = new SpeechSynthesisUtterance(text);
+    
+    // 设置温柔的语音参数
+    utterance.rate = 0.8; // 降低语速使声音更温柔
+    utterance.pitch = 1.3; // 提高音调使声音更甜美
+    utterance.volume = 0.8; // 音量
+    
+    // 智能选择温柔小姐姐的声音
+    const voices = window.speechSynthesis.getVoices();
+    console.log('可用语音列表:', voices.map(v => ({ name: v.name, lang: v.lang, gender: v.name })));
+    
+    // 优先选择中文女性语音
+    let selectedVoice = null;
+    
+    // 第一优先级：寻找明确标识为女性的中文语音
+    const femaleKeywords = ['female', 'woman', '女', '小姐', '姐姐', '温柔', '甜美', 'xiaoxiao', 'xiaoyi', 'xiaoyun'];
+    const chineseFemaleVoice = voices.find(voice => {
+      const isChineseVoice = voice.lang.includes('zh') || voice.name.toLowerCase().includes('chinese');
+      const isFemaleVoice = femaleKeywords.some(keyword => 
+        voice.name.toLowerCase().includes(keyword.toLowerCase())
+      );
+      return isChineseVoice && isFemaleVoice;
+    });
+    
+    if (chineseFemaleVoice) {
+      selectedVoice = chineseFemaleVoice;
+      console.log('✅ 找到中文女性语音:', chineseFemaleVoice.name);
+    } else {
+      // 第二优先级：选择任意中文语音
+      const chineseVoice = voices.find(voice => 
+        voice.lang.includes('zh') || voice.name.toLowerCase().includes('chinese')
+      );
+      
+      if (chineseVoice) {
+        selectedVoice = chineseVoice;
+        console.log('⚠️ 未找到女性语音，使用中文语音:', chineseVoice.name);
+      } else {
+        // 第三优先级：选择任意女性语音
+        const anyFemaleVoice = voices.find(voice => 
+          femaleKeywords.some(keyword => 
+            voice.name.toLowerCase().includes(keyword.toLowerCase())
+          )
+        );
+        
+        if (anyFemaleVoice) {
+          selectedVoice = anyFemaleVoice;
+          console.log('⚠️ 未找到中文女性语音，使用其他女性语音:', anyFemaleVoice.name);
+        } else {
+          console.log('❌ 未找到合适的女性语音，将使用默认语音');
+        }
+      }
+    }
+    
+    if (selectedVoice) {
+      utterance.voice = selectedVoice;
+    }
+    
+    // 设置事件监听器
+    utterance.onstart = () => {
+      setIsSpeaking(true);
+      setCurrentSpeakingMessageId(messageId);
+    };
+    
+    utterance.onend = () => {
+      setIsSpeaking(false);
+      setCurrentSpeakingMessageId(null);
+    };
+    
+    utterance.onerror = () => {
+      setIsSpeaking(false);
+      setCurrentSpeakingMessageId(null);
+    };
+    
+    // 播放语音
+    window.speechSynthesis.speak(utterance);
+  };
+
+  // 语音输入功能
+  const handleVoiceInput = () => {
+    if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+      alert('您的浏览器不支持语音识别功能，请使用Chrome或Edge浏览器');
+      return;
+    }
+
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const recognition = new SpeechRecognition();
+    
+    recognition.lang = 'zh-CN';
+    recognition.continuous = false;
+    recognition.interimResults = false;
+    
+    recognition.onstart = () => {
+      setIsListening(true);
+    };
+    
+    recognition.onresult = (event) => {
+      const transcript = event.results[0][0].transcript;
+      setInputText(transcript);
+      setIsListening(false);
+    };
+    
+    recognition.onerror = (event) => {
+      console.error('语音识别错误:', event.error);
+      setIsListening(false);
+      if (event.error === 'no-speech') {
+        alert('没有检测到语音，请重试');
+      } else if (event.error === 'not-allowed') {
+        alert('请允许麦克风权限以使用语音输入功能');
+      } else {
+        alert('语音识别失败，请重试');
+      }
+    };
+    
+    recognition.onend = () => {
+      setIsListening(false);
+    };
+    
+    recognition.start();
   };
 
   if (!aiCoach) {
@@ -407,12 +525,6 @@ const AICoach: React.FC = () => {
                   <p className="text-sm text-gray-600">
                     {aiCoach.personality === 'strict' ? '严格型教练' : 
                      aiCoach.personality === 'gentle' ? '温和型教练' : '幽默型教练'}
-                    {fitnessCoachAI && (
-                      <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800">
-                        <Sparkles className="w-3 h-3 mr-1" />
-                        AI增强
-                      </span>
-                    )}
                   </p>
                 </div>
               </div>
@@ -430,46 +542,7 @@ const AICoach: React.FC = () => {
 
       {/* 消息列表 */}
       <div className="flex-1 max-w-md mx-auto w-full px-4 py-4 overflow-y-auto">
-        {/* AI 功能状态提示 */}
-        {fitnessCoachAI ? (
-          <div className="mb-4 bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg p-4">
-            <div className="flex items-start gap-3">
-              <Sparkles className="w-5 h-5 text-green-500 mt-0.5" />
-              <div className="flex-1">
-                <h3 className="text-sm font-medium text-green-900 mb-1">AI 增强功能已启用</h3>
-                <p className="text-sm text-green-700 mb-2">
-                  正在使用 DeepSeek AI 为您提供更智能、更个性化的健身指导
-                </p>
-                <button
-                  onClick={() => navigate('/ai-coach/settings')}
-                  className="inline-flex items-center gap-2 bg-green-600 text-white px-3 py-1.5 rounded-md text-sm hover:bg-green-700 transition-colors"
-                >
-                  <Settings className="w-4 h-4" />
-                  管理设置
-                </button>
-              </div>
-            </div>
-          </div>
-        ) : (
-          <div className="mb-4 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4">
-            <div className="flex items-start gap-3">
-              <Sparkles className="w-5 h-5 text-blue-500 mt-0.5" />
-              <div className="flex-1">
-                <h3 className="text-sm font-medium text-blue-900 mb-1">AI 增强功能</h3>
-                <p className="text-sm text-blue-700 mb-3">
-                  启用 DeepSeek AI 获得更智能的个性化健身指导
-                </p>
-                <button
-                  onClick={() => navigate('/ai-coach/settings')}
-                  className="inline-flex items-center gap-2 bg-blue-600 text-white px-3 py-1.5 rounded-md text-sm hover:bg-blue-700 transition-colors"
-                >
-                  <Settings className="w-4 h-4" />
-                  启用 AI 功能
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
+
         
         <div className="space-y-4">
           {messages.map((message) => (
@@ -496,8 +569,20 @@ const AICoach: React.FC = () => {
                   </span>
                   
                   {message.type === 'coach' && aiCoach.config.voiceEnabled && (
-                    <button className="text-gray-400 hover:text-gray-600 transition-colors">
-                      <Volume2 className="w-4 h-4" />
+                    <button 
+                      onClick={() => handleSpeakMessage(message.content, message.id)}
+                      className={`transition-colors ${
+                        isSpeaking && currentSpeakingMessageId === message.id
+                          ? 'text-red-500 hover:text-red-700' 
+                          : 'text-gray-400 hover:text-gray-600'
+                      }`}
+                      title={isSpeaking && currentSpeakingMessageId === message.id ? '停止播放' : '播放语音'}
+                    >
+                      {isSpeaking && currentSpeakingMessageId === message.id ? (
+                        <VolumeX className="w-4 h-4" />
+                      ) : (
+                        <Volume2 className="w-4 h-4" />
+                      )}
                     </button>
                   )}
                 </div>

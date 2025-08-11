@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>强制清理所有数据和缓存</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .button {
+            background: #007AFF;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 8px;
+            transition: background 0.2s;
+        }
+        .button:hover {
+            background: #0056CC;
+        }
+        .button.danger {
+            background: #FF3B30;
+        }
+        .button.danger:hover {
+            background: #D70015;
+        }
+        .button.success {
+            background: #34C759;
+        }
+        .button.warning {
+            background: #FF9500;
+        }
+        .log-container {
+            background: #1a1a1a;
+            color: #00ff00;
+            padding: 16px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            max-height: 400px;
+            overflow-y: auto;
+            margin-top: 16px;
+        }
+        .status {
+            padding: 12px;
+            border-radius: 8px;
+            margin: 8px 0;
+            font-weight: bold;
+        }
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .status.warning {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+        .step {
+            background: #e3f2fd;
+            border-left: 4px solid #2196f3;
+            padding: 16px;
+            margin: 16px 0;
+        }
+        .step h4 {
+            margin: 0 0 8px 0;
+            color: #1976d2;
+        }
+        .countdown {
+            font-size: 24px;
+            font-weight: bold;
+            color: #ff6b6b;
+            text-align: center;
+            margin: 16px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>🧹 强制清理所有数据和缓存</h1>
+        <p><strong>这个工具将彻底清理所有可能导致AI识别结果显示的数据源。</strong></p>
+        
+        <div id="status"></div>
+        
+        <div class="step">
+            <h4>🎯 问题分析</h4>
+            <p>你看到的AI识别结果可能来自以下几个地方：</p>
+            <ul>
+                <li><strong>浏览器localStorage</strong>：保存的历史打卡数据</li>
+                <li><strong>浏览器缓存</strong>：缓存的页面和资源</li>
+                <li><strong>Service Worker缓存</strong>：PWA应用的离线缓存</li>
+                <li><strong>浏览器会话存储</strong>：临时会话数据</li>
+                <li><strong>IndexedDB</strong>：浏览器数据库</li>
+            </ul>
+        </div>
+        
+        <div class="step">
+            <h4>🔧 解决方案</h4>
+            <p>我们将按顺序执行以下清理操作：</p>
+            <ol>
+                <li>清理所有localStorage数据</li>
+                <li>清理所有sessionStorage数据</li>
+                <li>清理所有IndexedDB数据</li>
+                <li>注销Service Worker</li>
+                <li>清理所有缓存</li>
+                <li>强制刷新应用</li>
+            </ol>
+        </div>
+        
+        <h3>🚀 一键彻底清理</h3>
+        <button class="button danger" onclick="executeFullCleanup()">🧹 执行完整清理流程</button>
+        <button class="button warning" onclick="manualSteps()">📋 显示手动清理步骤</button>
+        
+        <h3>🔍 单独操作</h3>
+        <button class="button" onclick="clearLocalStorage()">清理 localStorage</button>
+        <button class="button" onclick="clearSessionStorage()">清理 sessionStorage</button>
+        <button class="button" onclick="clearIndexedDB()">清理 IndexedDB</button>
+        <button class="button" onclick="unregisterServiceWorker()">注销 Service Worker</button>
+        <button class="button" onclick="clearAllCaches()">清理所有缓存</button>
+        
+        <h3>🔄 验证和重启</h3>
+        <button class="button success" onclick="createFreshUser()">创建全新用户</button>
+        <button class="button success" onclick="openFreshApp()">打开全新应用</button>
+        
+        <div id="countdown" class="countdown" style="display: none;"></div>
+        <div id="manualSteps" style="display: none;">
+            <div class="step">
+                <h4>📋 手动清理步骤</h4>
+                <ol>
+                    <li><strong>打开开发者工具</strong>：按 F12 或右键选择"检查"</li>
+                    <li><strong>进入Application标签</strong>：在开发者工具中找到Application选项卡</li>
+                    <li><strong>清理Storage</strong>：
+                        <ul>
+                            <li>Local Storage → 删除所有条目</li>
+                            <li>Session Storage → 删除所有条目</li>
+                            <li>IndexedDB → 删除所有数据库</li>
+                        </ul>
+                    </li>
+                    <li><strong>清理Service Workers</strong>：在Service Workers部分点击"Unregister"</li>
+                    <li><strong>清理Cache Storage</strong>：删除所有缓存</li>
+                    <li><strong>硬刷新</strong>：按 Ctrl+Shift+R 强制刷新页面</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card">
+        <h2>📝 操作日志</h2>
+        <button class="button" onclick="clearLogs()">清空日志</button>
+        <div id="logContainer" class="log-container"></div>
+    </div>
+
+    <script>
+        let logCount = 0;
+        
+        function log(message, type = 'info') {
+            logCount++;
+            const timestamp = new Date().toLocaleTimeString();
+            const logContainer = document.getElementById('logContainer');
+            const color = type === 'error' ? '#ff6b6b' : type === 'success' ? '#51cf66' : type === 'warning' ? '#ffd43b' : '#00ff00';
+            
+            logContainer.innerHTML += `<div style="color: ${color}">[${timestamp}] ${logCount}: ${message}</div>`;
+            logContainer.scrollTop = logContainer.scrollHeight;
+        }
+        
+        function clearLogs() {
+            document.getElementById('logContainer').innerHTML = '';
+            logCount = 0;
+            log('日志已清除', 'info');
+        }
+        
+        function showStatus(message, type = 'info') {
+            const statusDiv = document.getElementById('status');
+            statusDiv.innerHTML = `<div class="status ${type}">${message}</div>`;
+            log(`状态: ${message}`, type);
+        }
+        
+        function showCountdown(seconds, message) {
+            const countdownDiv = document.getElementById('countdown');
+            countdownDiv.style.display = 'block';
+            
+            let remaining = seconds;
+            const interval = setInterval(() => {
+                countdownDiv.innerHTML = `${message} ${remaining}秒`;
+                remaining--;
+                
+                if (remaining < 0) {
+                    clearInterval(interval);
+                    countdownDiv.style.display = 'none';
+                }
+            }, 1000);
+        }
+        
+        async function clearLocalStorage() {
+            log('开始清理localStorage...', 'info');
+            
+            try {
+                const keys = Object.keys(localStorage);
+                log(`发现 ${keys.length} 个localStorage键`, 'info');
+                
+                keys.forEach(key => {
+                    log(`删除localStorage键: ${key}`, 'info');
+                    localStorage.removeItem(key);
+                });
+                
+                log('localStorage清理完成', 'success');
+                showStatus('✅ localStorage已清理', 'success');
+            } catch (error) {
+                log(`清理localStorage失败: ${error.message}`, 'error');
+                showStatus(`❌ localStorage清理失败: ${error.message}`, 'error');
+            }
+        }
+        
+        async function clearSessionStorage() {
+            log('开始清理sessionStorage...', 'info');
+            
+            try {
+                const keys = Object.keys(sessionStorage);
+                log(`发现 ${keys.length} 个sessionStorage键`, 'info');
+                
+                sessionStorage.clear();
+                
+                log('sessionStorage清理完成', 'success');
+                showStatus('✅ sessionStorage已清理', 'success');
+            } catch (error) {
+                log(`清理sessionStorage失败: ${error.message}`, 'error');
+                showStatus(`❌ sessionStorage清理失败: ${error.message}`, 'error');
+            }
+        }
+        
+        async function clearIndexedDB() {
+            log('开始清理IndexedDB...', 'info');
+            
+            try {
+                if ('indexedDB' in window) {
+                    const databases = await indexedDB.databases();
+                    log(`发现 ${databases.length} 个IndexedDB数据库`, 'info');
+                    
+                    for (const db of databases) {
+                        if (db.name) {
+                            log(`删除IndexedDB数据库: ${db.name}`, 'info');
+                            const deleteRequest = indexedDB.deleteDatabase(db.name);
+                            await new Promise((resolve, reject) => {
+                                deleteRequest.onsuccess = () => resolve(true);
+                                deleteRequest.onerror = () => reject(deleteRequest.error);
+                            });
+                        }
+                    }
+                    
+                    log('IndexedDB清理完成', 'success');
+                    showStatus('✅ IndexedDB已清理', 'success');
+                } else {
+                    log('浏览器不支持IndexedDB', 'warning');
+                    showStatus('⚠️ 浏览器不支持IndexedDB', 'warning');
+                }
+            } catch (error) {
+                log(`清理IndexedDB失败: ${error.message}`, 'error');
+                showStatus(`❌ IndexedDB清理失败: ${error.message}`, 'error');
+            }
+        }
+        
+        async function unregisterServiceWorker() {
+            log('开始注销Service Worker...', 'info');
+            
+            try {
+                if ('serviceWorker' in navigator) {
+                    const registrations = await navigator.serviceWorker.getRegistrations();
+                    log(`发现 ${registrations.length} 个Service Worker`, 'info');
+                    
+                    for (const registration of registrations) {
+                        log(`注销Service Worker: ${registration.scope}`, 'info');
+                        await registration.unregister();
+                    }
+                    
+                    log('Service Worker注销完成', 'success');
+                    showStatus('✅ Service Worker已注销', 'success');
+                } else {
+                    log('浏览器不支持Service Worker', 'warning');
+                    showStatus('⚠️ 浏览器不支持Service Worker', 'warning');
+                }
+            } catch (error) {
+                log(`注销Service Worker失败: ${error.message}`, 'error');
+                showStatus(`❌ Service Worker注销失败: ${error.message}`, 'error');
+            }
+        }
+        
+        async function clearAllCaches() {
+            log('开始清理所有缓存...', 'info');
+            
+            try {
+                if ('caches' in window) {
+                    const cacheNames = await caches.keys();
+                    log(`发现 ${cacheNames.length} 个缓存`, 'info');
+                    
+                    for (const cacheName of cacheNames) {
+                        log(`删除缓存: ${cacheName}`, 'info');
+                        await caches.delete(cacheName);
+                    }
+                    
+                    log('缓存清理完成', 'success');
+                    showStatus('✅ 所有缓存已清理', 'success');
+                } else {
+                    log('浏览器不支持Cache API', 'warning');
+                    showStatus('⚠️ 浏览器不支持Cache API', 'warning');
+                }
+            } catch (error) {
+                log(`清理缓存失败: ${error.message}`, 'error');
+                showStatus(`❌ 缓存清理失败: ${error.message}`, 'error');
+            }
+        }
+        
+        async function executeFullCleanup() {
+            log('🚀 开始执行完整清理流程...', 'info');
+            showStatus('🚀 正在执行完整清理流程...', 'warning');
+            
+            try {
+                // 步骤1: 清理localStorage
+                await clearLocalStorage();
+                await new Promise(resolve => setTimeout(resolve, 500));
+                
+                // 步骤2: 清理sessionStorage
+                await clearSessionStorage();
+                await new Promise(resolve => setTimeout(resolve, 500));
+                
+                // 步骤3: 清理IndexedDB
+                await clearIndexedDB();
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                
+                // 步骤4: 注销Service Worker
+                await unregisterServiceWorker();
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                
+                // 步骤5: 清理缓存
+                await clearAllCaches();
+                await new Promise(resolve => setTimeout(resolve, 500));
+                
+                log('🎉 完整清理流程执行完成！', 'success');
+                showStatus('🎉 完整清理流程执行完成！准备刷新应用...', 'success');
+                
+                // 倒计时刷新
+                showCountdown(5, '将在');
+                setTimeout(() => {
+                    window.location.href = 'http://localhost:5173';
+                }, 5000);
+                
+            } catch (error) {
+                log(`完整清理流程失败: ${error.message}`, 'error');
+                showStatus(`❌ 完整清理流程失败: ${error.message}`, 'error');
+            }
+        }
+        
+        function manualSteps() {
+            const stepsDiv = document.getElementById('manualSteps');
+            stepsDiv.style.display = stepsDiv.style.display === 'none' ? 'block' : 'none';
+            log('显示/隐藏手动清理步骤', 'info');
+        }
+        
+        function createFreshUser() {
+            log('创建全新用户...', 'info');
+            
+            try {
+                const freshUser = {
+                    id: 'fresh-user-' + Date.now(),
+                    phone: '13800138000',
+                    nickname: '全新用户',
+                    age: 25,
+                    height: 170,
+                    weight: 65,
+                    fitnessGoal: 'lose_weight',
+                    createdAt: new Date().toISOString()
+                };
+                
+                const freshData = {
+                    state: {
+                        user: freshUser,
+                        isLoggedIn: true,
+                        aiCoach: null,
+                        currentContract: null,
+                        contractHistory: [],
+                        todayCheckIns: [],
+                        checkInHistory: [], // 完全空的历史记录
+                        currentChatSession: null,
+                        chatHistory: [],
+                        loading: false,
+                        error: null
+                    },
+                    version: 0
+                };
+                
+                localStorage.setItem('fitness-contract-storage', JSON.stringify(freshData));
+                
+                log('全新用户创建成功', 'success');
+                showStatus('✅ 全新用户已创建，没有任何历史数据', 'success');
+                
+            } catch (error) {
+                log(`创建用户失败: ${error.message}`, 'error');
+                showStatus(`❌ 创建用户失败: ${error.message}`, 'error');
+            }
+        }
+        
+        function openFreshApp() {
+            log('打开全新应用...', 'info');
+            
+            // 在新窗口中打开应用，并添加时间戳防止缓存
+            const timestamp = Date.now();
+            const url = `http://localhost:5173?t=${timestamp}`;
+            window.open(url, '_blank');
+            
+            log('全新应用已在新窗口中打开', 'success');
+            showStatus('✅ 全新应用已打开', 'success');
+        }
+        
+        // 页面加载时的初始化
+        window.onload = function() {
+            log('强制清理工具已加载', 'info');
+            showStatus('🔧 准备执行彻底清理操作', 'info');
+        };
+    </script>
+</body>
+</html>

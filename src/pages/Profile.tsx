@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Phone, Target, Calendar, Settings, LogOut, Edit3, Save, X, Camera, Upload } from 'lucide-react';
+import { ArrowLeft, Phone, Target, Calendar, Settings, LogOut, Edit3, Save, X, Camera, Upload, Bell } from 'lucide-react';
 import { useAppStore } from '@/store';
 import { getSafeImageUrl } from '@/lib/image-proxy';
 
@@ -435,6 +435,8 @@ const Profile: React.FC = () => {
             </div>
           </button>
           
+
+          
           <button 
             onClick={() => navigate('/history')}
             className="w-full flex items-center gap-3 px-6 py-4 hover:bg-gray-50 transition-colors border-b border-gray-100"
@@ -448,7 +450,18 @@ const Profile: React.FC = () => {
             </div>
           </button>
           
-
+          <button 
+            onClick={() => navigate('/settings/notifications')}
+            className="w-full flex items-center gap-3 px-6 py-4 hover:bg-gray-50 transition-colors border-b border-gray-100"
+          >
+            <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center">
+              <Bell className="w-5 h-5 text-orange-600" />
+            </div>
+            <div className="flex-1 text-left">
+              <p className="font-medium text-gray-900">通知设置</p>
+              <p className="text-sm text-gray-600">管理消息提醒和通知偏好</p>
+            </div>
+          </button>
           
           <button 
             onClick={handleLogout}

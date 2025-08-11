@@ -1,40 +1,23 @@
 import React, { useState, useEffect } from 'react';
-import { MapPin, Users, MessageCircle, Camera, Send, Plus, Search } from 'lucide-react';
+import { MapPin, Users, MessageCircle, Camera, Send, Plus, Search, ArrowLeft } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useAppStore } from '@/store';
 import { getSafeImageUrl } from '@/lib/image-proxy';
+import { communityApi, Community as ApiCommunity, Message as ApiMessage, CreateCommunityData, CreateMessageData } from '@/services/communityApi';
 
-interface Community {
-  id: string;
-  name: string;
-  description: string;
-  memberCount: number;
+interface Community extends Omit<ApiCommunity, 'createdAt' | 'updatedAt'> {
   distance?: number;
-  avatar: string;
   isJoined: boolean;
-  location: {
-    latitude: number;
-    longitude: number;
-    address: string;
-  };
 }
 
-interface Message {
-  id: string;
-  userId: string;
+interface Message extends Omit<ApiMessage, 'createdAt'> {
   username: string;
-  avatar: string;
-  content: string;
-  image?: string;
-  location?: {
-    latitude: number;
-    longitude: number;
-    address: string;
-  };
   timestamp: Date;
 }
 
 const Community: React.FC = () => {
   const { user } = useAppStore();
+  const navigate = useNavigate();
   const [currentView, setCurrentView] = useState<'list' | 'chat' | 'create'>('list');
   const [selectedCommunity, setSelectedCommunity] = useState<Community | null>(null);
   const [communities, setCommunities] = useState<Community[]>([]);
@@ -44,65 +27,25 @@ const Community: React.FC = () => {
   const [userLocation, setUserLocation] = useState<{latitude: number, longitude: number} | null>(null);
   const [locationPermission, setLocationPermission] = useState<'granted' | 'denied' | 'prompt'>('prompt');
 
-  // localStorage 键名常量
+  // localStorage 键名常量（仅用于位置信息）
   const STORAGE_KEYS = {
-    COMMUNITIES: 'fitness_communities',
-    COMMUNITY_MESSAGES: 'fitness_community_messages',
     USER_LOCATION: 'fitness_user_location'
   };
 
-  // 从localStorage加载数据
-  const loadFromStorage = () => {
+  // 从localStorage加载用户位置
+  const loadUserLocation = () => {
     try {
-      // 加载社群列表
-      const savedCommunities = localStorage.getItem(STORAGE_KEYS.COMMUNITIES);
-      if (savedCommunities) {
-        const parsedCommunities = JSON.parse(savedCommunities);
-        setCommunities(parsedCommunities);
-      }
-
-      // 加载聊天记录
-      const savedMessages = localStorage.getItem(STORAGE_KEYS.COMMUNITY_MESSAGES);
-      if (savedMessages) {
-        const parsedMessages = JSON.parse(savedMessages);
-        // 恢复Date对象
-        Object.keys(parsedMessages).forEach(communityId => {
-          parsedMessages[communityId] = parsedMessages[communityId].map((msg: {id: string; text: string; sender: string; timestamp: string | Date; avatar?: string}) => ({
-            ...msg,
-            timestamp: new Date(msg.timestamp)
-          }));
-        });
-        setCommunityMessages(parsedMessages);
-      }
-
-      // 加载用户位置
       const savedLocation = localStorage.getItem(STORAGE_KEYS.USER_LOCATION);
       if (savedLocation) {
         const parsedLocation = JSON.parse(savedLocation);
         setUserLocation(parsedLocation);
         setLocationPermission('granted');
+        return parsedLocation;
       }
     } catch (error) {
-      console.error('从localStorage加载数据失败:', error);
+      console.error('从localStorage加载用户位置失败:', error);
     }
-  };
-
-  // 保存社群列表到localStorage
-  const saveCommunities = (communities: Community[]) => {
-    try {
-      localStorage.setItem(STORAGE_KEYS.COMMUNITIES, JSON.stringify(communities));
-    } catch (error) {
-      console.error('保存社群列表失败:', error);
-    }
-  };
-
-  // 保存聊天记录到localStorage
-  const saveCommunityMessages = (messages: Record<string, Message[]>) => {
-    try {
-      localStorage.setItem(STORAGE_KEYS.COMMUNITY_MESSAGES, JSON.stringify(messages));
-    } catch (error) {
-      console.error('保存聊天记录失败:', error);
-    }
+    return null;
   };
 
   // 保存用户位置到localStorage
@@ -112,6 +55,60 @@ const Community: React.FC = () => {
     } catch (error) {
       console.error('保存用户位置失败:', error);
     }
+  };
+
+  // 从API加载社群列表
+  const loadCommunities = async () => {
+    try {
+      let apiCommunities: ApiCommunity[] = [];
+      
+      if (userLocation) {
+        // 如果有位置信息，获取附近的社群
+        apiCommunities = await communityApi.getNearbyCommunities(
+          userLocation.latitude,
+          userLocation.longitude,
+          10
+        );
+      } else {
+        // 否则获取推荐社群
+        apiCommunities = await communityApi.getRecommendedCommunities(1, 20);
+      }
+
+      // 转换为前端格式
+      const frontendCommunities: Community[] = apiCommunities.map(community => ({
+        ...community,
+        isJoined: false, // TODO: 从用户状态获取
+        distance: userLocation && community.location ? 
+          calculateDistance(
+            userLocation.latitude,
+            userLocation.longitude,
+            community.location.latitude,
+            community.location.longitude
+          ) : undefined
+      }));
+
+      setCommunities(frontendCommunities);
+    } catch (error) {
+      console.error('加载社群列表失败:', error);
+    }
+  };
+
+  // 计算距离（公里）
+  const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
+    const R = 6371; // 地球半径（公里）
+    const dLat = deg2rad(lat2 - lat1);
+    const dLon = deg2rad(lon2 - lon1);
+    const a = 
+      Math.sin(dLat/2) * Math.sin(dLat/2) +
+      Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) * 
+      Math.sin(dLon/2) * Math.sin(dLon/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    const distance = R * c;
+    return Math.round(distance * 10) / 10; // 保留一位小数
+  };
+
+  const deg2rad = (deg: number): number => {
+    return deg * (Math.PI/180);
   };
   
   // 创建社群表单状态
@@ -128,6 +125,8 @@ const Community: React.FC = () => {
   const requestLocationPermission = async () => {
     if (!navigator.geolocation) {
       alert('您的浏览器不支持地理定位');
+      setLocationPermission('denied');
+      await loadCommunities(); // 加载推荐社群
       return;
     }
 
@@ -149,117 +148,34 @@ const Community: React.FC = () => {
       setLocationPermission('granted');
       saveUserLocation(location); // 保存位置信息
       
-      // 只有在没有保存的社群数据时才加载默认数据
-      const savedCommunities = localStorage.getItem(STORAGE_KEYS.COMMUNITIES);
-      if (!savedCommunities) {
-        loadNearbyCommunities(position.coords.latitude, position.coords.longitude);
-      }
+      // 加载附近的社群
+      await loadCommunities();
     } catch (error) {
       console.error('获取位置失败:', error);
       setLocationPermission('denied');
       
-      // 只有在没有保存的社群数据时才加载默认数据
-      const savedCommunities = localStorage.getItem(STORAGE_KEYS.COMMUNITIES);
-      if (!savedCommunities) {
-        loadDefaultCommunities();
-      }
+      // 加载推荐社群
+      await loadCommunities();
     }
   };
 
-  // 加载附近的社群
-  const loadNearbyCommunities = (lat: number, lng: number) => {
-    // 模拟附近社群数据
-    const mockCommunities: Community[] = [
-      {
-        id: 'default_1',
-        name: '晨跑俱乐部',
-        description: '每天早上6点一起晨跑，欢迎所有热爱运动的朋友！',
-        memberCount: 128,
-        distance: 0.5,
-        avatar: '🏃‍♂️',
-        isJoined: false,
-        location: {
-          latitude: lat + 0.001,
-          longitude: lng + 0.001,
-          address: '附近公园'
-        }
-      },
-      {
-        id: 'default_2',
-        name: '健身房伙伴',
-        description: '一起去健身房撸铁，互相监督，共同进步！',
-        memberCount: 89,
-        distance: 1.2,
-        avatar: '💪',
-        isJoined: true,
-        location: {
-          latitude: lat + 0.002,
-          longitude: lng - 0.001,
-          address: '星光健身房'
-        }
-      },
-      {
-        id: 'default_3',
-        name: '瑜伽爱好者',
-        description: '分享瑜伽心得，一起练习，放松身心',
-        memberCount: 156,
-        distance: 2.1,
-        avatar: '🧘‍♀️',
-        isJoined: false,
-        location: {
-          latitude: lat - 0.001,
-          longitude: lng + 0.002,
-          address: '瑜伽工作室'
-        }
-      }
-    ];
-    setCommunities(mockCommunities);
-    saveCommunities(mockCommunities); // 保存到localStorage
-  };
-
-  // 加载默认社群（无位置权限时）
-  const loadDefaultCommunities = () => {
-    const mockCommunities: Community[] = [
-      {
-        id: 'default_1',
-        name: '全国健身交流群',
-        description: '全国健身爱好者交流平台',
-        memberCount: 2580,
-        avatar: '🏋️‍♂️',
-        isJoined: false,
-        location: {
-          latitude: 0,
-          longitude: 0,
-          address: '线上社群'
-        }
-      },
-      {
-        id: 'default_2',
-        name: '减脂打卡群',
-        description: '一起减脂，互相监督打卡',
-        memberCount: 1234,
-        avatar: '⚖️',
-        isJoined: true,
-        location: {
-          latitude: 0,
-          longitude: 0,
-          address: '线上社群'
-        }
-      }
-    ];
-    setCommunities(mockCommunities);
-    saveCommunities(mockCommunities); // 保存到localStorage
-  };
-
   // 加入社群
-  const joinCommunity = (communityId: string) => {
-    const updatedCommunities = communities.map(community => 
-      community.id === communityId 
-        ? { ...community, isJoined: true, memberCount: community.memberCount + 1 }
-        : community
-    );
-    setCommunities(updatedCommunities);
-    saveCommunities(updatedCommunities); // 保存到localStorage
+  const joinCommunity = async (communityId: string) => {
+    try {
+      const userId = user?.id || `temp_user_${Date.now()}`;
+      await communityApi.joinCommunity(communityId, userId);
+      
+      // 更新本地状态
+      const updatedCommunities = communities.map(community => 
+        community.id === communityId 
+          ? { ...community, isJoined: true, memberCount: community.memberCount + 1 }
+          : community
+      );
+      setCommunities(updatedCommunities);
+    } catch (error) {
+      console.error('加入社群失败:', error);
+      alert('加入社群失败，请稍后重试');
+    }
   };
 
   // 进入聊天
@@ -270,88 +186,80 @@ const Community: React.FC = () => {
   };
 
   // 加载聊天消息
-  const loadChatMessages = (communityId: string) => {
-    // 检查是否已有该社群的聊天记录
-    if (communityMessages[communityId]) {
-      setMessages(communityMessages[communityId]);
-      return;
-    }
+  const loadChatMessages = async (communityId: string) => {
+    try {
+      // 从API获取聊天消息
+      const apiMessages = await communityApi.getCommunityMessages(communityId, 1, 50);
+      
+      // 转换为前端格式
+      const frontendMessages: Message[] = apiMessages.map(msg => ({
+        ...msg,
+        username: msg.nickname || `用户${msg.userId.slice(-4)}`,
+        timestamp: new Date(msg.createdAt),
+        avatar: msg.avatar || '👤'
+      }));
 
-    // 如果没有记录，创建初始模拟消息
-    const mockMessages: Message[] = [
-      {
-        id: '1',
-        userId: 'user1',
-        username: '小明',
-        avatar: '👨',
-        content: '今天的训练完成了！感觉很棒！',
-        timestamp: new Date(Date.now() - 3600000)
-      },
-      {
-        id: '2',
-        userId: 'user2',
-        username: '小红',
-        avatar: '👩',
-        content: '我也刚练完，累但是很有成就感',
-        image: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjEwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZGRkIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzk5OSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPuWBpeaIv+WbvueJhzwvdGV4dD48L3N2Zz4=',
-        timestamp: new Date(Date.now() - 1800000)
-      },
-      {
-        id: '3',
-        userId: 'user3',
-        username: '健身达人',
-        avatar: '💪',
-        content: '分享一下我今天的训练地点',
-        location: {
-          latitude: userLocation?.latitude || 39.9042,
-          longitude: userLocation?.longitude || 116.4074,
-          address: '北京市朝阳区健身房'
-        },
-        timestamp: new Date(Date.now() - 900000)
-      }
-    ];
-    
-    // 保存到社群消息记录中
-    const updatedMessages = {
-      ...communityMessages,
-      [communityId]: mockMessages
-    };
-    setCommunityMessages(updatedMessages);
-    saveCommunityMessages(updatedMessages); // 保存到localStorage
-    setMessages(mockMessages);
+      // 按时间正序排列（最早的在前）
+      frontendMessages.sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
+      
+      setMessages(frontendMessages);
+      
+      // 更新本地缓存
+      const updatedMessages = {
+        ...communityMessages,
+        [communityId]: frontendMessages
+      };
+      setCommunityMessages(updatedMessages);
+    } catch (error) {
+      console.error('加载聊天消息失败:', error);
+      setMessages([]);
+    }
   };
 
   // 添加状态来管理待发送的图片
   const [pendingImage, setPendingImage] = useState<string | null>(null);
 
   // 发送消息
-  const sendMessage = () => {
+  const sendMessage = async () => {
     if ((!newMessage.trim() && !pendingImage) || !user || !selectedCommunity) return;
 
-    const message: Message = {
-      id: Date.now().toString(),
-      userId: user.id,
-      username: user.nickname,
-      avatar: user.avatar || '👤',
-      content: newMessage.trim() || (pendingImage ? '[图片]' : ''),
-      image: pendingImage || undefined,
-      timestamp: new Date()
-    };
+    try {
+      const userId = user.id || `temp_user_${Date.now()}`;
+      const messageData: CreateMessageData = {
+        content: newMessage.trim() || (pendingImage ? '[图片]' : ''),
+        type: pendingImage ? 'image' : 'text',
+        image: pendingImage || undefined,
+        userId
+      };
 
-    // 更新当前消息列表
-    const updatedMessages = [...messages, message];
-    setMessages(updatedMessages);
-    
-    // 同时更新社群消息记录
-    const updatedCommunityMessages = {
-      ...communityMessages,
-      [selectedCommunity.id]: updatedMessages
-    };
-    setCommunityMessages(updatedCommunityMessages);
-    saveCommunityMessages(updatedCommunityMessages); // 保存到localStorage
-    
-    setNewMessage('');
-    setPendingImage(null);
+      // 发送到API
+      const apiMessage = await communityApi.sendMessage(selectedCommunity.id, messageData);
+      
+      // 转换为前端格式
+      const frontendMessage: Message = {
+        ...apiMessage,
+        username: apiMessage.nickname || user.nickname,
+        timestamp: new Date(apiMessage.createdAt),
+        avatar: user.avatar || '👤'
+      };
+
+      // 更新当前消息列表
+      const updatedMessages = [...messages, frontendMessage];
+      setMessages(updatedMessages);
+      
+      // 同时更新社群消息记录
+      const updatedCommunityMessages = {
+        ...communityMessages,
+        [selectedCommunity.id]: updatedMessages
+      };
+      setCommunityMessages(updatedCommunityMessages);
+      
+      setNewMessage('');
+      setPendingImage(null);
+    } catch (error) {
+      console.error('发送消息失败:', error);
+      alert('发送消息失败，请稍后重试');
+    }
   };
 
   // 选择图片（不立即发送）
@@ -386,22 +294,31 @@ const Community: React.FC = () => {
         navigator.geolocation.getCurrentPosition(resolve, reject);
       });
 
-      const message: Message = {
-        id: Date.now().toString(),
-        userId: user.id,
-        username: user.nickname,
-        avatar: user.avatar || '👤',
+      const userId = user.id || `temp_user_${Date.now()}`;
+      const messageData: CreateMessageData = {
         content: '[位置信息]',
+        type: 'location',
         location: {
           latitude: position.coords.latitude,
           longitude: position.coords.longitude,
           address: '当前位置'
         },
-        timestamp: new Date()
+        userId
+      };
+
+      // 发送到API
+      const apiMessage = await communityApi.sendMessage(selectedCommunity.id, messageData);
+      
+      // 转换为前端格式
+      const frontendMessage: Message = {
+        ...apiMessage,
+        username: apiMessage.nickname || user.nickname,
+        timestamp: new Date(apiMessage.createdAt),
+        avatar: user.avatar || '👤'
       };
 
       // 更新当前消息列表
-      const updatedMessages = [...messages, message];
+      const updatedMessages = [...messages, frontendMessage];
       setMessages(updatedMessages);
       
       // 同时更新社群消息记录
@@ -410,61 +327,85 @@ const Community: React.FC = () => {
         [selectedCommunity.id]: updatedMessages
       };
       setCommunityMessages(updatedCommunityMessages);
-      saveCommunityMessages(updatedCommunityMessages); // 保存到localStorage
-    } catch {
+    } catch (error) {
+      console.error('发送位置失败:', error);
       alert('获取位置失败，请检查位置权限');
     }
   };
 
   // 创建社群
-  const createCommunity = () => {
+  const createCommunity = async () => {
     if (!createForm.name.trim() || !user) return;
 
-    const newCommunity: Community = {
-      id: Date.now().toString(),
-      name: createForm.name,
-      description: createForm.description,
-      memberCount: 1,
-      avatar: createForm.avatar,
-      isJoined: true,
-      location: {
-        latitude: userLocation?.latitude || 0,
-        longitude: userLocation?.longitude || 0,
-        address: userLocation ? '当前位置' : '线上社群'
-      }
-    };
+    try {
+      const userId = user.id || `temp_user_${Date.now()}`;
+      const communityData: CreateCommunityData = {
+        name: createForm.name.trim(),
+        description: createForm.description,
+        avatar: createForm.avatar,
+        isPublic: createForm.isPublic,
+        maxMembers: createForm.maxMembers,
+        location: userLocation ? {
+          latitude: userLocation.latitude,
+          longitude: userLocation.longitude,
+          address: '当前位置'
+        } : undefined,
+        userId
+      };
 
-    const updatedCommunities = [newCommunity, ...communities];
-    setCommunities(updatedCommunities);
-    saveCommunities(updatedCommunities); // 保存到localStorage
-    
-    setCreateForm({
-      name: '',
-      description: '',
-      avatar: '🏃‍♂️',
-      category: 'fitness',
-      isPublic: true,
-      maxMembers: 100
-    });
-    setCurrentView('list');
+      // 调用API创建社群
+      const apiCommunity = await communityApi.createCommunity(communityData);
+      
+      // 转换为前端格式
+      const newCommunity: Community = {
+        ...apiCommunity,
+        isJoined: true,
+        distance: userLocation && apiCommunity.location ? 
+          calculateDistance(
+            userLocation.latitude,
+            userLocation.longitude,
+            apiCommunity.location.latitude,
+            apiCommunity.location.longitude
+          ) : undefined
+      };
+
+      const updatedCommunities = [newCommunity, ...communities];
+      setCommunities(updatedCommunities);
+      
+      setCreateForm({
+        name: '',
+        description: '',
+        avatar: '🏃‍♂️',
+        category: 'fitness',
+        isPublic: true,
+        maxMembers: 100
+      });
+      setCurrentView('list');
+    } catch (error) {
+      console.error('创建社群失败:', error);
+      alert('创建社群失败，请稍后重试');
+    }
   };
 
   useEffect(() => {
-    // 首先从localStorage加载数据
-    loadFromStorage();
+    // 首先加载用户位置
+    const savedLocation = loadUserLocation();
     
-    // 然后处理位置权限
+    // 然后处理位置权限和加载社群
     if (locationPermission === 'prompt') {
       requestLocationPermission();
+    } else {
+      // 如果已有位置权限状态，直接加载社群
+      loadCommunities();
     }
   }, []);
 
-  // 监听locationPermission变化，确保在从localStorage恢复状态后正确处理位置权限
+  // 监听userLocation变化，重新加载社群
   useEffect(() => {
-    if (locationPermission === 'prompt') {
-      requestLocationPermission();
+    if (locationPermission !== 'prompt') {
+      loadCommunities();
     }
-  }, [locationPermission]);
+  }, [userLocation]);
 
   if (currentView === 'create') {
     return (
@@ -614,9 +555,9 @@ const Community: React.FC = () => {
           <div className="flex items-center gap-3">
             <button 
               onClick={() => setCurrentView('list')}
-              className="text-blue-600 hover:text-blue-700"
+              className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg"
             >
-              ← 返回
+              <ArrowLeft className="w-5 h-5" />
             </button>
             <div className="text-2xl">{selectedCommunity.avatar}</div>
             <div>
@@ -720,7 +661,15 @@ const Community: React.FC = () => {
       {/* 头部 */}
       <div className="bg-white shadow-sm border-b px-4 py-4">
         <div className="flex items-center justify-between">
-          <h1 className="text-xl font-bold text-gray-900">健身社群</h1>
+          <div className="flex items-center gap-3">
+            <button 
+              onClick={() => navigate(-1)}
+              className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </button>
+            <h1 className="text-xl font-bold text-gray-900">健身社群</h1>
+          </div>
           <button 
             onClick={() => setCurrentView('create')}
             className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg"

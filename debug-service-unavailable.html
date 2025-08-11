@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>服务不可用错误调试工具</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+        }
+        .section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            background: #f9f9f9;
+        }
+        .section h2 {
+            color: #34495e;
+            margin-top: 0;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+        }
+        .test-button {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 5px;
+            transition: background 0.3s;
+        }
+        .test-button:hover {
+            background: #2980b9;
+        }
+        .test-button:disabled {
+            background: #bdc3c7;
+            cursor: not-allowed;
+        }
+        .log-area {
+            background: #2c3e50;
+            color: #ecf0f1;
+            padding: 15px;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            max-height: 400px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            margin-top: 15px;
+        }
+        .success { color: #27ae60; }
+        .error { color: #e74c3c; }
+        .warning { color: #f39c12; }
+        .info { color: #3498db; }
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .status-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #3498db;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .status-card h3 {
+            margin-top: 0;
+            color: #2c3e50;
+        }
+        .clear-button {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            float: right;
+        }
+        .clear-button:hover {
+            background: #c0392b;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 服务不可用错误调试工具</h1>
+        
+        <div class="section">
+            <h2>🚀 快速诊断</h2>
+            <button class="test-button" onclick="runFullDiagnosis()">运行完整诊断</button>
+            <button class="test-button" onclick="clearAllData()">清除所有数据</button>
+            <button class="test-button" onclick="forceReload()">强制刷新</button>
+            <button class="test-button" onclick="openApp()">打开应用</button>
+        </div>
+
+        <div class="status-grid">
+            <div class="status-card">
+                <h3>🌐 网络状态</h3>
+                <div id="networkStatus">检查中...</div>
+            </div>
+            <div class="status-card">
+                <h3>🔧 Service Worker</h3>
+                <div id="swStatus">检查中...</div>
+            </div>
+            <div class="status-card">
+                <h3>💾 本地存储</h3>
+                <div id="storageStatus">检查中...</div>
+            </div>
+            <div class="status-card">
+                <h3>🏠 应用状态</h3>
+                <div id="appStatus">检查中...</div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>🔍 详细检查</h2>
+            <button class="test-button" onclick="checkServiceWorker()">检查Service Worker</button>
+            <button class="test-button" onclick="checkCache()">检查缓存</button>
+            <button class="test-button" onclick="checkLocalStorage()">检查本地存储</button>
+            <button class="test-button" onclick="checkNetworkRequests()">测试网络请求</button>
+            <button class="test-button" onclick="checkConsoleErrors()">检查控制台错误</button>
+            <button class="test-button" onclick="checkBrowserCompatibility()">检查浏览器兼容性</button>
+        </div>
+
+        <div class="section">
+            <h2>🛠️ 修复操作</h2>
+            <button class="test-button" onclick="unregisterServiceWorker()">注销Service Worker</button>
+            <button class="test-button" onclick="clearCache()">清除缓存</button>
+            <button class="test-button" onclick="resetLocalStorage()">重置本地存储</button>
+            <button class="test-button" onclick="hardRefresh()">硬刷新</button>
+        </div>
+
+        <div class="section">
+            <h2>📋 诊断日志</h2>
+            <button class="clear-button" onclick="clearLog()">清除日志</button>
+            <div id="logArea" class="log-area">等待诊断...</div>
+        </div>
+    </div>
+
+    <script>
+        let logArea = document.getElementById('logArea');
+
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const className = type;
+            logArea.innerHTML += `<span class="${className}">[${timestamp}] ${message}</span>\n`;
+            logArea.scrollTop = logArea.scrollHeight;
+            console.log(`[${type.toUpperCase()}] ${message}`);
+        }
+
+        function clearLog() {
+            logArea.innerHTML = '';
+        }
+
+        // 页面加载时自动运行基础检查
+        window.addEventListener('load', () => {
+            log('🔧 调试工具已加载', 'info');
+            checkBasicStatus();
+        });
+
+        async function checkBasicStatus() {
+            // 检查网络状态
+            const networkStatus = navigator.onLine ? '✅ 在线' : '❌ 离线';
+            document.getElementById('networkStatus').innerHTML = networkStatus;
+            
+            // 检查Service Worker
+            if ('serviceWorker' in navigator) {
+                const registrations = await navigator.serviceWorker.getRegistrations();
+                const swStatus = registrations.length > 0 ? 
+                    `✅ 已注册 (${registrations.length}个)` : 
+                    '⚠️ 未注册';
+                document.getElementById('swStatus').innerHTML = swStatus;
+            } else {
+                document.getElementById('swStatus').innerHTML = '❌ 不支持';
+            }
+            
+            // 检查本地存储
+            try {
+                const storageData = localStorage.getItem('fitness-contract-storage');
+                const storageStatus = storageData ? 
+                    `✅ 有数据 (${Math.round(storageData.length/1024)}KB)` : 
+                    '⚠️ 无数据';
+                document.getElementById('storageStatus').innerHTML = storageStatus;
+            } catch (error) {
+                document.getElementById('storageStatus').innerHTML = '❌ 访问失败';
+            }
+            
+            // 检查应用状态
+            try {
+                const response = await fetch('http://localhost:5173/', { method: 'HEAD' });
+                const appStatus = response.ok ? '✅ 运行正常' : '❌ 响应异常';
+                document.getElementById('appStatus').innerHTML = appStatus;
+            } catch (error) {
+                document.getElementById('appStatus').innerHTML = '❌ 连接失败';
+            }
+        }
+
+        async function runFullDiagnosis() {
+            log('🚀 开始完整诊断...', 'info');
+            clearLog();
+            
+            await checkServiceWorker();
+            await checkCache();
+            await checkLocalStorage();
+            await checkNetworkRequests();
+            await checkConsoleErrors();
+            await checkBrowserCompatibility();
+            
+            log('✅ 完整诊断完成', 'success');
+        }
+
+        async function checkServiceWorker() {
+            log('🔍 检查Service Worker...', 'info');
+            
+            if (!('serviceWorker' in navigator)) {
+                log('❌ 浏览器不支持Service Worker', 'error');
+                return;
+            }
+            
+            try {
+                const registrations = await navigator.serviceWorker.getRegistrations();
+                log(`📊 发现 ${registrations.length} 个Service Worker注册`, 'info');
+                
+                for (let i = 0; i < registrations.length; i++) {
+                    const reg = registrations[i];
+                    log(`  - 注册 ${i+1}: ${reg.scope}`, 'info');
+                    log(`    状态: ${reg.active ? '活跃' : '非活跃'}`, reg.active ? 'success' : 'warning');
+                    
+                    if (reg.waiting) {
+                        log('    ⚠️ 有等待中的Service Worker', 'warning');
+                    }
+                    
+                    if (reg.installing) {
+                        log('    🔄 正在安装新的Service Worker', 'info');
+                    }
+                }
+                
+                // 检查当前页面的控制器
+                if (navigator.serviceWorker.controller) {
+                    log(`✅ 当前页面由Service Worker控制: ${navigator.serviceWorker.controller.scriptURL}`, 'success');
+                } else {
+                    log('⚠️ 当前页面未被Service Worker控制', 'warning');
+                }
+                
+            } catch (error) {
+                log(`❌ Service Worker检查失败: ${error.message}`, 'error');
+            }
+        }
+
+        async function checkCache() {
+            log('🔍 检查缓存...', 'info');
+            
+            if (!('caches' in window)) {
+                log('❌ 浏览器不支持Cache API', 'error');
+                return;
+            }
+            
+            try {
+                const cacheNames = await caches.keys();
+                log(`📊 发现 ${cacheNames.length} 个缓存`, 'info');
+                
+                for (const cacheName of cacheNames) {
+                    const cache = await caches.open(cacheName);
+                    const keys = await cache.keys();
+                    log(`  - ${cacheName}: ${keys.length} 个缓存项`, 'info');
+                    
+                    // 检查主页是否被缓存
+                    const mainPageCached = await cache.match('/');
+                    if (mainPageCached) {
+                        log(`    ✅ 主页已缓存`, 'success');
+                    } else {
+                        log(`    ⚠️ 主页未缓存`, 'warning');
+                    }
+                }
+                
+            } catch (error) {
+                log(`❌ 缓存检查失败: ${error.message}`, 'error');
+            }
+        }
+
+        async function checkLocalStorage() {
+            log('🔍 检查本地存储...', 'info');
+            
+            try {
+                // 检查localStorage可用性
+                localStorage.setItem('test', 'test');
+                localStorage.removeItem('test');
+                log('✅ localStorage可用', 'success');
+                
+                // 检查应用数据
+                const storageData = localStorage.getItem('fitness-contract-storage');
+                if (storageData) {
+                    log(`📊 应用数据大小: ${Math.round(storageData.length/1024)}KB`, 'info');
+                    
+                    try {
+                        const data = JSON.parse(storageData);
+                        const state = data.state;
+                        
+                        log('📋 数据结构分析:', 'info');
+                        log(`  - 用户: ${state?.user ? '✅ 存在' : '❌ 不存在'}`, state?.user ? 'success' : 'error');
+                        log(`  - 登录状态: ${state?.isLoggedIn ? '✅ 已登录' : '❌ 未登录'}`, state?.isLoggedIn ? 'success' : 'error');
+                        log(`  - 契约: ${state?.currentContract ? '✅ 存在' : '❌ 不存在'}`, state?.currentContract ? 'success' : 'info');
+                        log(`  - AI教练: ${state?.aiCoach ? '✅ 存在' : '❌ 不存在'}`, state?.aiCoach ? 'success' : 'info');
+                        
+                        // 检查数据一致性
+                        if (!state?.user && state?.currentContract) {
+                            log('⚠️ 数据不一致: 没有用户但存在契约', 'warning');
+                        }
+                        
+                        if (state?.currentContract?.amount === 500) {
+                            log('⚠️ 发现测试数据: 500元保证金', 'warning');
+                        }
+                        
+                    } catch (parseError) {
+                        log(`❌ 数据解析失败: ${parseError.message}`, 'error');
+                    }
+                } else {
+                    log('ℹ️ 没有应用数据', 'info');
+                }
+                
+                // 检查其他存储项
+                const allKeys = Object.keys(localStorage);
+                log(`📊 localStorage总共有 ${allKeys.length} 个项目`, 'info');
+                
+            } catch (error) {
+                log(`❌ localStorage检查失败: ${error.message}`, 'error');
+            }
+        }
+
+        async function checkNetworkRequests() {
+            log('🔍 检查网络请求...', 'info');
+            
+            // 测试前端服务器
+            try {
+                const frontendResponse = await fetch('http://localhost:5173/', { 
+                    method: 'HEAD',
+                    cache: 'no-cache'
+                });
+                log(`✅ 前端服务器响应: ${frontendResponse.status}`, 'success');
+            } catch (error) {
+                log(`❌ 前端服务器连接失败: ${error.message}`, 'error');
+            }
+            
+            // 测试后端API
+            try {
+                const backendResponse = await fetch('http://localhost:3000/api/test', {
+                    cache: 'no-cache'
+                });
+                if (backendResponse.ok) {
+                    const data = await backendResponse.json();
+                    log(`✅ 后端API响应正常: ${JSON.stringify(data)}`, 'success');
+                } else {
+                    log(`⚠️ 后端API响应异常: ${backendResponse.status}`, 'warning');
+                }
+            } catch (error) {
+                log(`❌ 后端API连接失败: ${error.message}`, 'error');
+            }
+            
+            // 测试静态资源
+            try {
+                const manifestResponse = await fetch('/manifest.json', { cache: 'no-cache' });
+                log(`${manifestResponse.ok ? '✅' : '❌'} manifest.json: ${manifestResponse.status}`, 
+                    manifestResponse.ok ? 'success' : 'error');
+            } catch (error) {
+                log(`❌ manifest.json加载失败: ${error.message}`, 'error');
+            }
+        }
+
+        function checkConsoleErrors() {
+            log('🔍 检查控制台错误...', 'info');
+            
+            // 重写console.error来捕获错误
+            const originalError = console.error;
+            const errors = [];
+            
+            console.error = function(...args) {
+                errors.push(args.join(' '));
+                originalError.apply(console, args);
+            };
+            
+            // 监听未捕获的错误
+            window.addEventListener('error', (event) => {
+                log(`❌ JavaScript错误: ${event.message} (${event.filename}:${event.lineno})`, 'error');
+            });
+            
+            window.addEventListener('unhandledrejection', (event) => {
+                log(`❌ 未处理的Promise拒绝: ${event.reason}`, 'error');
+            });
+            
+            log('✅ 错误监听器已设置', 'success');
+        }
+
+        function checkBrowserCompatibility() {
+            log('🔍 检查浏览器兼容性...', 'info');
+            
+            const features = {
+                'Service Worker': 'serviceWorker' in navigator,
+                'Cache API': 'caches' in window,
+                'Fetch API': 'fetch' in window,
+                'Promise': 'Promise' in window,
+                'localStorage': 'localStorage' in window,
+                'sessionStorage': 'sessionStorage' in window,
+                'Notification API': 'Notification' in window,
+                'Web App Manifest': 'onbeforeinstallprompt' in window,
+                'ES6 Modules': 'noModule' in HTMLScriptElement.prototype,
+                'CSS Grid': CSS.supports('display', 'grid'),
+                'CSS Flexbox': CSS.supports('display', 'flex')
+            };
+            
+            for (const [feature, supported] of Object.entries(features)) {
+                log(`  ${supported ? '✅' : '❌'} ${feature}`, supported ? 'success' : 'error');
+            }
+            
+            log(`🌐 用户代理: ${navigator.userAgent}`, 'info');
+        }
+
+        // 修复操作
+        async function unregisterServiceWorker() {
+            log('🔧 注销Service Worker...', 'info');
+            
+            if (!('serviceWorker' in navigator)) {
+                log('❌ 浏览器不支持Service Worker', 'error');
+                return;
+            }
+            
+            try {
+                const registrations = await navigator.serviceWorker.getRegistrations();
+                for (const registration of registrations) {
+                    await registration.unregister();
+                    log(`✅ 已注销: ${registration.scope}`, 'success');
+                }
+                log('✅ 所有Service Worker已注销', 'success');
+            } catch (error) {
+                log(`❌ 注销失败: ${error.message}`, 'error');
+            }
+        }
+
+        async function clearCache() {
+            log('🔧 清除缓存...', 'info');
+            
+            if (!('caches' in window)) {
+                log('❌ 浏览器不支持Cache API', 'error');
+                return;
+            }
+            
+            try {
+                const cacheNames = await caches.keys();
+                for (const cacheName of cacheNames) {
+                    await caches.delete(cacheName);
+                    log(`✅ 已删除缓存: ${cacheName}`, 'success');
+                }
+                log('✅ 所有缓存已清除', 'success');
+            } catch (error) {
+                log(`❌ 清除缓存失败: ${error.message}`, 'error');
+            }
+        }
+
+        function resetLocalStorage() {
+            log('🔧 重置本地存储...', 'info');
+            
+            try {
+                const keys = Object.keys(localStorage);
+                localStorage.clear();
+                log(`✅ 已清除 ${keys.length} 个localStorage项目`, 'success');
+                
+                sessionStorage.clear();
+                log('✅ 已清除sessionStorage', 'success');
+            } catch (error) {
+                log(`❌ 重置失败: ${error.message}`, 'error');
+            }
+        }
+
+        function clearAllData() {
+            log('🔧 清除所有数据...', 'info');
+            resetLocalStorage();
+            clearCache();
+            unregisterServiceWorker();
+            log('✅ 所有数据已清除，建议刷新页面', 'success');
+        }
+
+        function hardRefresh() {
+            log('🔄 执行硬刷新...', 'info');
+            window.location.reload(true);
+        }
+
+        function forceReload() {
+            log('🔄 强制刷新...', 'info');
+            window.location.href = window.location.href + '?t=' + Date.now();
+        }
+
+        function openApp() {
+            log('🚀 打开应用...', 'info');
+            window.open('http://localhost:5173/', '_blank');
+        }
+    </script>
+</body>
+</html>

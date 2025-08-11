@@ -1,17 +1,15 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Save, Sparkles, Settings, AlertCircle, User, Edit3, Plus, X, Camera, Upload } from 'lucide-react';
-import { useAICoach, useDeepSeekApiKey, useDeepSeekEnabled, useAppStore } from '@/store';
+import { ArrowLeft, Save, Sparkles, Settings, AlertCircle, User, Edit3, Plus, X, Camera, Upload, MessageSquare, Bell } from 'lucide-react';
+import { useAICoach, useAppStore } from '@/store';
+import SMSSettings from '../components/SMSSettings';
 
 const AICoachSettings: React.FC = () => {
   const navigate = useNavigate();
   const aiCoach = useAICoach();
-  const deepSeekApiKey = useDeepSeekApiKey();
-  const deepSeekEnabled = useDeepSeekEnabled();
-  const { setDeepSeekConfig, setAICoach } = useAppStore();
+  const { setAICoach } = useAppStore();
   
-  const [apiKey, setApiKey] = useState(deepSeekApiKey || '');
-  const [deepSeekEnabledLocal, setDeepSeekEnabledLocal] = useState<boolean>(deepSeekEnabled ?? true);
+
   const [voiceEnabled, setVoiceEnabled] = useState(aiCoach?.config.voiceEnabled || false);
   const [reminderFrequency, setReminderFrequency] = useState<'low' | 'medium' | 'high'>(
     aiCoach?.config.reminderFrequency || 'medium'
@@ -34,15 +32,15 @@ const AICoachSettings: React.FC = () => {
   const [coachAvatar, setCoachAvatar] = useState('');
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // 短信配置状态
+  const [showSMSSettings, setShowSMSSettings] = useState(false);
 
   useEffect(() => {
     if (aiCoach) {
       setVoiceEnabled(aiCoach.config.voiceEnabled);
       setReminderFrequency(aiCoach.config.reminderFrequency);
-      setDeepSeekEnabledLocal(aiCoach.config.deepSeekEnabled);
-      if (aiCoach.config.deepSeekApiKey) {
-        setApiKey(aiCoach.config.deepSeekApiKey);
-      }
+
       
       // 初始化自定义身份数据
       setCustomIdentity({
@@ -128,13 +126,6 @@ const AICoachSettings: React.FC = () => {
     setSaveMessage('');
     
     try {
-      // 更新 DeepSeek 配置
-      if (deepSeekEnabledLocal && apiKey.trim()) {
-        setDeepSeekConfig(apiKey.trim(), true);
-      } else {
-        setDeepSeekConfig('', false);
-      }
-      
       // 更新 AI 教练配置
       if (aiCoach) {
         const updatedCoach = {
@@ -148,9 +139,7 @@ const AICoachSettings: React.FC = () => {
           config: {
             ...aiCoach.config,
             voiceEnabled,
-            reminderFrequency,
-            deepSeekEnabled: deepSeekEnabledLocal && !!apiKey.trim(),
-            deepSeekApiKey: deepSeekEnabledLocal ? apiKey.trim() : undefined
+            reminderFrequency
           }
         };
         
@@ -479,55 +468,7 @@ const AICoachSettings: React.FC = () => {
             </div>
           )}
 
-          {/* DeepSeek AI 设置 */}
-          <div className="bg-white rounded-lg p-4 shadow-sm">
-            <div className="flex items-center gap-2 mb-4">
-              <Sparkles className="w-5 h-5 text-purple-500" />
-              <h3 className="text-lg font-semibold text-gray-900">DeepSeek AI 增强</h3>
-            </div>
-            
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-medium text-gray-900">启用 AI 增强</p>
-                  <p className="text-sm text-gray-600">使用 DeepSeek AI 提供更智能的对话</p>
-                </div>
-                <label className="relative inline-flex items-center cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={deepSeekEnabledLocal}
-                    onChange={(e) => setDeepSeekEnabledLocal(e.target.checked)}
-                    className="sr-only peer"
-                  />
-                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                </label>
-              </div>
 
-              {deepSeekEnabledLocal && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    API Key
-                  </label>
-                  <div className="relative">
-                    <input
-                      type="password"
-                      value={apiKey}
-                      onChange={(e) => setApiKey(e.target.value)}
-                      placeholder="请输入 DeepSeek API Key"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      style={{ 
-                        fontFamily: 'monospace',
-                        letterSpacing: '2px'
-                      }}
-                    />
-                  </div>
-                  <p className="text-xs text-gray-500 mt-1">
-                    API Key 将安全存储在本地，不会上传到服务器
-                  </p>
-                </div>
-              )}
-            </div>
-          </div>
 
           {/* 基础设置 */}
           <div className="bg-white rounded-lg p-4 shadow-sm">
@@ -567,6 +508,30 @@ const AICoachSettings: React.FC = () => {
                   <option value="high">高频 (每天4-5次)</option>
                 </select>
               </div>
+
+              <div className="border-t pt-4 space-y-3">
+                <button
+                  onClick={() => navigate('/settings/notifications')}
+                  className="flex items-center gap-2 w-full p-3 text-left bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  <Bell className="w-5 h-5 text-green-500" />
+                  <div>
+                    <p className="font-medium text-gray-900">通知设置</p>
+                    <p className="text-sm text-gray-600">管理打卡提醒、用餐提醒等通知</p>
+                  </div>
+                </button>
+                
+                <button
+                  onClick={() => setShowSMSSettings(true)}
+                  className="flex items-center gap-2 w-full p-3 text-left bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  <MessageSquare className="w-5 h-5 text-blue-500" />
+                  <div>
+                    <p className="font-medium text-gray-900">短信服务配置</p>
+                    <p className="text-sm text-gray-600">配置验证码短信发送服务</p>
+                  </div>
+                </button>
+              </div>
             </div>
           </div>
 
@@ -582,18 +547,29 @@ const AICoachSettings: React.FC = () => {
             </div>
           )}
 
-          {/* 说明信息 */}
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <div className="flex items-start gap-2">
-              <AlertCircle className="w-5 h-5 text-blue-500 mt-0.5" />
-              <div className="text-sm text-blue-700">
-                <p className="font-medium mb-1">关于 DeepSeek AI</p>
-                <p>启用后，AI教练将使用 DeepSeek 的大语言模型提供更智能、更个性化的健身指导和对话体验。</p>
-              </div>
+
+        </div>
+      </div>
+
+      {/* 短信配置弹窗 */}
+      {showSMSSettings && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between p-4 border-b">
+              <h2 className="text-lg font-semibold text-gray-900">短信服务配置</h2>
+              <button
+                onClick={() => setShowSMSSettings(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+            <div className="p-4">
+              <SMSSettings onClose={() => setShowSMSSettings(false)} />
             </div>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };

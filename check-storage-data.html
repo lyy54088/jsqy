@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>检查localStorage数据</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .log { margin: 10px 0; padding: 10px; background: #f5f5f5; border-radius: 5px; }
+        .error { background: #ffebee; color: #c62828; }
+        .success { background: #e8f5e9; color: #2e7d32; }
+        .warning { background: #fff3e0; color: #ef6c00; }
+    </style>
+</head>
+<body>
+    <h1>检查localStorage中的打卡历史数据</h1>
+    <div id="output"></div>
+    
+    <script>
+        function log(message, type = 'info') {
+            const output = document.getElementById('output');
+            const div = document.createElement('div');
+            div.className = `log ${type}`;
+            div.textContent = message;
+            output.appendChild(div);
+            console.log(message);
+        }
+        
+        try {
+            log('开始检查localStorage数据...', 'info');
+            
+            const storageData = localStorage.getItem('fitness-contract-storage');
+            if (storageData) {
+                const data = JSON.parse(storageData);
+                log('找到localStorage数据', 'success');
+                
+                // 检查今日打卡记录
+                if (data.state && data.state.todayCheckIns) {
+                    log(`今日打卡记录数量: ${data.state.todayCheckIns.length}`, 'info');
+                    data.state.todayCheckIns.forEach((checkIn, index) => {
+                        log(`今日打卡 ${index + 1}: ${checkIn.type} - ${checkIn.aiResult?.description || '无AI结果'}`, 'info');
+                        if (checkIn.aiResult && checkIn.aiResult.description.includes('微信')) {
+                            log(`⚠️ 发现微信相关的今日打卡记录!`, 'warning');
+                            log(`详情: ${JSON.stringify(checkIn.aiResult)}`, 'warning');
+                        }
+                    });
+                }
+                
+                // 检查历史打卡记录
+                if (data.state && data.state.checkInHistory) {
+                    log(`历史打卡记录数量: ${data.state.checkInHistory.length}`, 'info');
+                    let wechatCount = 0;
+                    data.state.checkInHistory.forEach((checkIn, index) => {
+                        if (checkIn.aiResult && checkIn.aiResult.description.includes('微信')) {
+                            wechatCount++;
+                            log(`🚨 发现微信相关历史记录 ${index + 1}:`, 'error');
+                            log(`类型: ${checkIn.type}`, 'error');
+                            log(`时间: ${checkIn.timestamp}`, 'error');
+                            log(`AI结果: ${checkIn.aiResult.description}`, 'error');
+                            log(`图片URL前50字符: ${checkIn.imageUrl ? checkIn.imageUrl.substring(0, 50) + '...' : 'null'}`, 'error');
+                            log('---', 'error');
+                        }
+                    });
+                    
+                    if (wechatCount > 0) {
+                        log(`总共发现 ${wechatCount} 条微信相关的历史记录`, 'error');
+                    } else {
+                        log('没有发现微信相关的历史记录', 'success');
+                    }
+                }
+            } else {
+                log('没有找到localStorage数据', 'warning');
+            }
+        } catch (error) {
+            log(`解析localStorage数据失败: ${error.message}`, 'error');
+        }
+    </script>
+</body>
+</html>

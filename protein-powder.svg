@@ -1,0 +1,47 @@
+﻿<svg width="400" height="300" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="containerGrad" cx="50%" cy="30%" r="70%">
+      <stop offset="0%" style="stop-color:#f8f9fa;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#e9ecef;stop-opacity:1" />
+    </radialGradient>
+    <linearGradient id="powderGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#fff8dc;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#f5f5dc;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#f0e68c;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- 背景 -->
+  <rect width="400" height="300" fill="#f8f9fa"/>
+  
+  <!-- 蛋白粉容器 -->
+  <ellipse cx="200" cy="250" rx="120" ry="40" fill="url(#containerGrad)" stroke="#dee2e6" stroke-width="2"/>
+  <rect x="80" y="120" width="240" height="130" fill="url(#containerGrad)" stroke="#dee2e6" stroke-width="2"/>
+  <ellipse cx="200" cy="120" rx="120" ry="40" fill="#ffffff" stroke="#dee2e6" stroke-width="2"/>
+  
+  <!-- 蛋白粉 -->
+  <ellipse cx="200" cy="140" rx="100" ry="30" fill="url(#powderGrad)"/>
+  
+  <!-- 勺子 -->
+  <ellipse cx="180" cy="100" rx="25" ry="15" fill="url(#powderGrad)" stroke="#ddd" stroke-width="1"/>
+  <rect x="175" y="85" width="10" height="40" fill="#8b4513" rx="2"/>
+  
+  <!-- 标签文字 -->
+  <rect x="90" y="160" width="220" height="60" fill="#ffffff" stroke="#007bff" stroke-width="2" rx="5"/>
+  <text x="200" y="180" text-anchor="middle" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="#007bff">WHEY PROTEIN</text>
+  <text x="200" y="200" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="#6c757d">乳清蛋白粉</text>
+  <text x="200" y="215" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#6c757d">25g蛋白质 / 每份</text>
+  
+  <!-- 营养成分小图标 -->
+  <circle cx="120" cy="80" r="8" fill="#28a745"/>
+  <text x="120" y="85" text-anchor="middle" font-family="Arial, sans-serif" font-size="8" fill="white">P</text>
+  <text x="120" y="100" text-anchor="middle" font-family="Arial, sans-serif" font-size="8" fill="#28a745">蛋白质</text>
+  
+  <circle cx="200" cy="80" r="8" fill="#ffc107"/>
+  <text x="200" y="85" text-anchor="middle" font-family="Arial, sans-serif" font-size="8" fill="white">C</text>
+  <text x="200" y="100" text-anchor="middle" font-family="Arial, sans-serif" font-size="8" fill="#ffc107">碳水</text>
+  
+  <circle cx="280" cy="80" r="8" fill="#dc3545"/>
+  <text x="280" y="85" text-anchor="middle" font-family="Arial, sans-serif" font-size="8" fill="white">F</text>
+  <text x="280" y="100" text-anchor="middle" font-family="Arial, sans-serif" font-size="8" fill="#dc3545">脂肪</text>
+</svg>

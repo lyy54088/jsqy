@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>用户状态检查</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin: 20px 0;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .button {
+            background: #007AFF;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 5px;
+            font-size: 14px;
+        }
+        .button:hover {
+            background: #0056CC;
+        }
+        .button.success {
+            background: #28a745;
+        }
+        .button.danger {
+            background: #dc3545;
+        }
+        .status {
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+            font-weight: 500;
+        }
+        .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .warning { background: #fff3cd; color: #856404; border: 1px solid #ffeaa7; }
+        .info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        pre {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 6px;
+            overflow-x: auto;
+            font-size: 12px;
+            border: 1px solid #e9ecef;
+        }
+        .highlight {
+            background: #fff3cd;
+            padding: 2px 4px;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body>
+    <h1>👤 用户状态检查工具</h1>
+    
+    <div class="card">
+        <h2>📊 当前状态</h2>
+        <div id="currentStatus"></div>
+        <button class="button" onclick="checkStatus()">刷新状态</button>
+        <button class="button success" onclick="createTestUser()">创建测试用户</button>
+        <button class="button danger" onclick="clearUserData()">清除用户数据</button>
+    </div>
+    
+    <div class="card">
+        <h2>🔧 快速操作</h2>
+        <button class="button" onclick="openApp()">打开应用主页</button>
+        <button class="button" onclick="openAuth()">打开登录页</button>
+        <button class="button" onclick="openDashboard()">打开仪表板</button>
+        <button class="button" onclick="testButtonClicks()">测试按钮点击</button>
+    </div>
+    
+    <div class="card">
+        <h2>📝 详细数据</h2>
+        <button class="button" onclick="showDetailedData()">显示详细数据</button>
+        <div id="detailedData"></div>
+    </div>
+
+    <script>
+        function showStatus(message, type = 'info') {
+            const statusDiv = document.getElementById('currentStatus');
+            statusDiv.innerHTML = `<div class="status ${type}">${message}</div>`;
+        }
+        
+        function checkStatus() {
+            try {
+                const storageData = localStorage.getItem('fitness-contract-storage');
+                
+                if (!storageData) {
+                    showStatus('❌ 没有找到用户数据 - 用户未登录', 'error');
+                    return;
+                }
+                
+                const data = JSON.parse(storageData);
+                const state = data.state;
+                
+                if (!state) {
+                    showStatus('❌ 数据格式错误 - 缺少state字段', 'error');
+                    return;
+                }
+                
+                const user = state.user;
+                const isLoggedIn = !!user; // 根据修复后的逻辑
+                
+                if (isLoggedIn && user) {
+                    showStatus(`✅ 用户已登录<br>
+                        <span class="highlight">用户名:</span> ${user.nickname}<br>
+                        <span class="highlight">手机:</span> ${user.phone}<br>
+                        <span class="highlight">ID:</span> ${user.id}`, 'success');
+                } else {
+                    showStatus('❌ 用户未登录 - 需要先登录才能使用Dashboard功能', 'warning');
+                }
+                
+                // 检查契约状态
+                if (state.currentContract) {
+                    const contract = state.currentContract;
+                    showStatus(document.getElementById('currentStatus').innerHTML + `<br>
+                        <span class="highlight">契约状态:</span> ${contract.paymentStatus}<br>
+                        <span class="highlight">契约类型:</span> ${contract.type}`, 'info');
+                }
+                
+            } catch (error) {
+                showStatus(`❌ 检查状态时出错: ${error.message}`, 'error');
+            }
+        }
+        
+        function createTestUser() {
+            const testUser = {
+                id: 'test-user-' + Date.now(),
+                phone: '13800138000',
+                nickname: '测试用户',
+                age: 25,
+                height: 170,
+                weight: 65,
+                fitnessGoal: 'lose_weight',
+                createdAt: new Date().toISOString()
+            };
+            
+            const appData = {
+                state: {
+                    user: testUser,
+                    isLoggedIn: true,
+                    aiCoach: null,
+                    currentContract: null,
+                    contractHistory: [],
+                    todayCheckIns: [],
+                    checkInHistory: [],
+                currentChatSession: null,
+                chatHistory: [],
+                loading: false,
+                    error: null
+                },
+                version: 0
+            };
+            
+            localStorage.setItem('fitness-contract-storage', JSON.stringify(appData));
+            showStatus('✅ 测试用户创建成功！现在可以访问Dashboard了', 'success');
+            
+            // 自动检查状态
+            setTimeout(checkStatus, 500);
+        }
+        
+        function clearUserData() {
+            localStorage.removeItem('fitness-contract-storage');
+            showStatus('✅ 用户数据已清除', 'success');
+            
+            // 自动检查状态
+            setTimeout(checkStatus, 500);
+        }
+        
+        function openApp() {
+            window.open('http://localhost:5173', '_blank');
+        }
+        
+        function openAuth() {
+            window.open('http://localhost:5173/auth', '_blank');
+        }
+        
+        function openDashboard() {
+            window.open('http://localhost:5173/dashboard', '_blank');
+        }
+        
+        function testButtonClicks() {
+            // 打开Dashboard并注入测试脚本
+            const dashboardWindow = window.open('http://localhost:5173/dashboard', '_blank');
+            
+            setTimeout(() => {
+                if (dashboardWindow && !dashboardWindow.closed) {
+                    try {
+                        // 注入测试脚本到Dashboard页面
+                        dashboardWindow.eval(`
+                            console.log('开始测试按钮点击...');
+                            
+                            // 查找所有按钮
+                            const buttons = document.querySelectorAll('button');
+                            console.log('找到按钮数量:', buttons.length);
+                            
+                            buttons.forEach((button, index) => {
+                                console.log('按钮', index + 1, ':', button.textContent.trim());
+                                
+                                // 为每个按钮添加点击监听器
+                                button.addEventListener('click', function(e) {
+                                    console.log('按钮被点击:', this.textContent.trim());
+                                    console.log('点击事件:', e);
+                                });
+                            });
+                            
+                            // 测试创建契约按钮
+                            const createContractBtn = Array.from(buttons).find(btn => 
+                                btn.textContent.includes('创建契约')
+                            );
+                            
+                            if (createContractBtn) {
+                                console.log('找到创建契约按钮，准备测试点击...');
+                                setTimeout(() => {
+                                    console.log('模拟点击创建契约按钮');
+                                    createContractBtn.click();
+                                }, 2000);
+                            } else {
+                                console.log('未找到创建契约按钮');
+                            }
+                        `);
+                        
+                        showStatus('✅ 测试脚本已注入到Dashboard页面，请查看浏览器控制台', 'success');
+                    } catch (error) {
+                        showStatus(`❌ 无法注入测试脚本: ${error.message}`, 'error');
+                    }
+                } else {
+                    showStatus('❌ 无法打开Dashboard页面', 'error');
+                }
+            }, 3000);
+        }
+        
+        function showDetailedData() {
+            const detailedDiv = document.getElementById('detailedData');
+            
+            try {
+                const storageData = localStorage.getItem('fitness-contract-storage');
+                
+                if (storageData) {
+                    const data = JSON.parse(storageData);
+                    detailedDiv.innerHTML = `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+                } else {
+                    detailedDiv.innerHTML = '<div class="status warning">没有找到存储数据</div>';
+                }
+            } catch (error) {
+                detailedDiv.innerHTML = `<div class="status error">解析数据时出错: ${error.message}</div>`;
+            }
+        }
+        
+        // 页面加载时自动检查状态
+        window.onload = function() {
+            checkStatus();
+        };
+    </script>
+</body>
+</html>

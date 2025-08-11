@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>修复周一训练问题</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 500px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .fix-container {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        .status {
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            font-weight: bold;
+        }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .warning { background: #fff3cd; color: #856404; }
+        .info { background: #d1ecf1; color: #0c5460; }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px;
+            min-width: 120px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .danger {
+            background: #dc3545;
+        }
+        .danger:hover {
+            background: #c82333;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="fix-container">
+        <h1>🔧 修复周一训练问题</h1>
+        
+        <div id="status" class="status info">
+            点击下方按钮开始诊断和修复
+        </div>
+        
+        <button onclick="diagnose()">🔍 诊断问题</button>
+        <button onclick="fixMondayWorkout()">🔧 修复周一训练</button>
+        <button onclick="createCompleteSetup()">🆕 完整重置</button>
+        <br>
+        <button onclick="goToDashboard()">🏠 返回主页</button>
+        <button onclick="clearAll()" class="danger">🗑️ 清除所有数据</button>
+    </div>
+
+    <script>
+        function updateStatus(message, type = 'info') {
+            const statusDiv = document.getElementById('status');
+            statusDiv.textContent = message;
+            statusDiv.className = `status ${type}`;
+        }
+
+        function diagnose() {
+            updateStatus('正在诊断...', 'info');
+            
+            const now = new Date();
+            const dayOfWeek = now.getDay();
+            const dayMapping = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+            const todayDayId = dayMapping[dayOfWeek];
+            
+            const userData = localStorage.getItem('app-store');
+            
+            if (!userData) {
+                updateStatus('❌ 没有找到用户数据，需要重新设置', 'error');
+                return;
+            }
+            
+            try {
+                const parsed = JSON.parse(userData);
+                const user = parsed.state?.user;
+                const currentContract = parsed.state?.currentContract;
+                const workoutPlan = currentContract?.workoutPlan;
+                
+                let issues = [];
+                
+                if (!user) issues.push('用户未登录');
+                if (!currentContract) issues.push('没有当前契约');
+                if (!workoutPlan) issues.push('没有训练计划');
+                
+                if (workoutPlan) {
+                    const selectedDays = workoutPlan.selectedDays || [];
+                    if (!selectedDays.includes('monday')) {
+                        issues.push('周一不在训练日列表中');
+                    }
+                }
+                
+                if (issues.length === 0) {
+                    updateStatus(`✅ 诊断完成：今天是${todayDayId}，系统配置正常`, 'success');
+                } else {
+                    updateStatus(`❌ 发现问题：${issues.join('、')}`, 'error');
+                }
+                
+            } catch (e) {
+                updateStatus(`❌ 数据解析失败：${e.message}`, 'error');
+            }
+        }
+
+        function fixMondayWorkout() {
+            updateStatus('正在修复周一训练设置...', 'info');
+            
+            const userData = localStorage.getItem('app-store');
+            let parsed;
+            
+            if (userData) {
+                try {
+                    parsed = JSON.parse(userData);
+                } catch (e) {
+                    updateStatus('❌ 数据解析失败，将创建新数据', 'warning');
+                    parsed = { state: {} };
+                }
+            } else {
+                parsed = { state: {} };
+            }
+            
+            // 确保用户存在
+            if (!parsed.state?.user) {
+                parsed.state.user = {
+                    id: 'user-' + Date.now(),
+                    phone: '13800138000',
+                    nickname: '健身用户',
+                    age: 25,
+                    height: 170,
+                    weight: 65,
+                    fitnessGoal: 'lose_weight',
+                    createdAt: new Date().toISOString(),
+                    loginType: 'phone'
+                };
+                parsed.state.isLoggedIn = true;
+            }
+            
+            // 确保契约存在
+            if (!parsed.state.currentContract) {
+                const startDate = new Date();
+                const endDate = new Date();
+                endDate.setDate(endDate.getDate() + 30);
+                
+                parsed.state.currentContract = {
+                    id: 'contract-' + Date.now(),
+                    userId: parsed.state.user.id,
+                    type: 'normal',
+                    amount: 300,
+                    startDate: startDate.toISOString(),
+                    endDate: endDate.toISOString(),
+                    status: 'active',
+                    dailyTasks: ['gym', 'protein'],
+                    completedDays: 0,
+                    violationDays: 0,
+                    remainingAmount: 300,
+                    paymentStatus: 'paid',
+                    violationPenalty: 100,
+                    accumulatedPenalty: 0,
+                    remainderAmount: 0
+                };
+            }
+            
+            // 设置训练计划，确保包含周一
+            parsed.state.currentContract.workoutPlan = {
+                planId: 'default-plan',
+                intensity: 'medium',
+                goal: 'fitness',
+                selectedDays: ['monday', 'tuesday', 'thursday', 'friday'],
+                weeklyWorkoutDays: 4
+            };
+            
+            // 清空今日打卡记录
+            parsed.state.todayCheckIns = [];
+            
+            // 确保其他必要字段存在
+            parsed.state.checkInHistory = parsed.state.checkInHistory || [];
+            parsed.state.contractHistory = parsed.state.contractHistory || [];
+            parsed.state.aiCoach = parsed.state.aiCoach || null;
+            parsed.state.currentChatSession = parsed.state.currentChatSession || null;
+            parsed.state.chatHistory = parsed.state.chatHistory || [];
+            parsed.state.notificationSettings = parsed.state.notificationSettings || {
+                enabled: true,
+                frequency: 'medium',
+                quietHours: { start: '22:00', end: '08:00' },
+                types: {
+                    checkInReminder: true,
+                    checkinReminder: true,
+                    contractExpiry: true,
+                    aiCoachMessage: true,
+                    dailyMotivation: true,
+                    mealReminder: true,
+                    gymReminder: true,
+                    proteinReminder: true
+                }
+            };
+            parsed.state.loading = false;
+            parsed.state.error = null;
+            
+            try {
+                localStorage.setItem('app-store', JSON.stringify(parsed));
+                updateStatus('✅ 修复完成！周一已设置为训练日，请刷新页面', 'success');
+            } catch (e) {
+                updateStatus(`❌ 修复失败：${e.message}`, 'error');
+            }
+        }
+
+        function createCompleteSetup() {
+            updateStatus('正在创建完整设置...', 'info');
+            
+            const startDate = new Date();
+            const endDate = new Date();
+            endDate.setDate(endDate.getDate() + 30);
+            
+            const completeData = {
+                state: {
+                    user: {
+                        id: 'user-' + Date.now(),
+                        phone: '13800138000',
+                        nickname: '健身达人',
+                        age: 25,
+                        height: 170,
+                        weight: 65,
+                        fitnessGoal: 'lose_weight',
+                        createdAt: new Date().toISOString(),
+                        loginType: 'phone'
+                    },
+                    isLoggedIn: true,
+                    currentContract: {
+                        id: 'contract-' + Date.now(),
+                        userId: 'user-' + Date.now(),
+                        type: 'normal',
+                        amount: 300,
+                        startDate: startDate.toISOString(),
+                        endDate: endDate.toISOString(),
+                        status: 'active',
+                        dailyTasks: ['gym', 'protein'],
+                        completedDays: 0,
+                        violationDays: 0,
+                        remainingAmount: 300,
+                        paymentStatus: 'paid',
+                        violationPenalty: 100,
+                        accumulatedPenalty: 0,
+                        remainderAmount: 0,
+                        workoutPlan: {
+                            planId: 'default-plan',
+                            intensity: 'medium',
+                            goal: 'fitness',
+                            selectedDays: ['monday', 'tuesday', 'thursday', 'friday'],
+                            weeklyWorkoutDays: 4
+                        }
+                    },
+                    contractHistory: [],
+                    todayCheckIns: [],
+                    checkInHistory: [],
+                    aiCoach: null,
+                    currentChatSession: null,
+                    chatHistory: [],
+                    notificationSettings: {
+                        enabled: true,
+                        frequency: 'medium',
+                        quietHours: { start: '22:00', end: '08:00' },
+                        types: {
+                            checkInReminder: true,
+                            checkinReminder: true,
+                            contractExpiry: true,
+                            aiCoachMessage: true,
+                            dailyMotivation: true,
+                            mealReminder: true,
+                            gymReminder: true,
+                            proteinReminder: true
+                        }
+                    },
+                    loading: false,
+                    error: null
+                },
+                version: 0
+            };
+            
+            try {
+                localStorage.setItem('app-store', JSON.stringify(completeData));
+                updateStatus('✅ 完整设置创建成功！请刷新页面', 'success');
+            } catch (e) {
+                updateStatus(`❌ 创建失败：${e.message}`, 'error');
+            }
+        }
+
+        function clearAll() {
+            if (confirm('确定要清除所有数据吗？这将删除所有用户数据和契约信息。')) {
+                localStorage.clear();
+                updateStatus('🗑️ 所有数据已清除', 'warning');
+            }
+        }
+
+        function goToDashboard() {
+            window.location.href = 'http://localhost:5173/';
+        }
+
+        // 页面加载时自动诊断
+        setTimeout(diagnose, 500);
+    </script>
+</body>
+</html>

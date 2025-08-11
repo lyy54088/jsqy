@@ -1,10 +1,10 @@
-# 后端代码结构方案
+# AI健身教练 - 保证金管理系统代码结构
 
-## 概述
+## 项目概览
 
-本文档详细说明了健身教练应用后端服务的代码组织结构、模块划分和开发规范。我们采用分层架构和模块化设计，确保代码的可维护性、可测试性和可扩展性。
+保证金管理系统采用分层架构设计，遵循关注点分离原则，确保代码的可维护性、可测试性和可扩展性。
 
-## 项目结构
+## 目录结构
 
 ```
 backend_service/
@@ -59,7 +59,6 @@ backend_service/
 │   │   ├── emailService.ts      # 邮件服务
 │   │   ├── smsService.ts        # 短信服务
 │   │   ├── external/            # 外部服务
-│   │   │   ├── deepseekAPI.ts   # DeepSeek API服务
 │   │   │   ├── foodAnalysisAPI.ts # 食物分析API
 │   │   │   └── index.ts
 │   │   └── index.ts             # 服务入口

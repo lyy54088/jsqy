@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>图片处理测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+        .result {
+            margin: 10px 0;
+            padding: 10px;
+            background: #f5f5f5;
+            border-radius: 4px;
+        }
+        .error {
+            background: #ffebee;
+            color: #c62828;
+        }
+        .success {
+            background: #e8f5e8;
+            color: #2e7d32;
+        }
+        input[type="file"] {
+            margin: 10px 0;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .test-btn {
+            background: #2196f3;
+            color: white;
+        }
+        .test-btn:hover {
+            background: #1976d2;
+        }
+        #preview {
+            max-width: 300px;
+            max-height: 300px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>图片处理和AI识别测试</h1>
+    
+    <div class="test-section">
+        <h2>1. 后端服务连接测试</h2>
+        <button class="test-btn" onclick="testBackendConnection()">测试后端连接</button>
+        <div id="backend-result" class="result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>2. 图片处理测试</h2>
+        <input type="file" id="imageInput" accept="image/*" onchange="handleImageSelect(event)">
+        <div id="image-info" class="result"></div>
+        <img id="preview" style="display: none;">
+    </div>
+
+    <div class="test-section">
+        <h2>3. AI识别测试</h2>
+        <button class="test-btn" onclick="testAIRecognition()" id="ai-test-btn" disabled>测试AI识别</button>
+        <div id="ai-result" class="result"></div>
+    </div>
+
+    <script>
+        let currentImageFile = null;
+        let processedImageData = null;
+
+        // 测试后端连接
+        async function testBackendConnection() {
+            const resultDiv = document.getElementById('backend-result');
+            resultDiv.innerHTML = '正在测试后端连接...';
+            
+            try {
+                const response = await fetch('http://localhost:3000/health');
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.innerHTML = `<div class="success">✅ 后端连接成功<br>状态: ${data.status}<br>时间: ${data.timestamp}</div>`;
+                } else {
+                    resultDiv.innerHTML = `<div class="error">❌ 后端连接失败: ${response.status}</div>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">❌ 后端连接错误: ${error.message}</div>`;
+            }
+        }
+
+        // 处理图片选择
+        function handleImageSelect(event) {
+            const file = event.target.files[0];
+            const infoDiv = document.getElementById('image-info');
+            const preview = document.getElementById('preview');
+            const aiTestBtn = document.getElementById('ai-test-btn');
+            
+            if (!file) {
+                infoDiv.innerHTML = '';
+                preview.style.display = 'none';
+                aiTestBtn.disabled = true;
+                return;
+            }
+
+            currentImageFile = file;
+            
+            // 显示文件信息
+            infoDiv.innerHTML = `
+                <strong>文件信息:</strong><br>
+                名称: ${file.name}<br>
+                大小: ${(file.size / 1024).toFixed(2)} KB<br>
+                类型: ${file.type}<br>
+                <div id="processing-info">正在处理图片...</div>
+            `;
+
+            // 显示预览
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                preview.src = e.target.result;
+                preview.style.display = 'block';
+            };
+            reader.readAsDataURL(file);
+
+            // 处理图片
+            processImage(file);
+        }
+
+        // 图片处理函数（复制自ai-vision-service.ts）
+        function processImage(file) {
+            return new Promise((resolve, reject) => {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                const img = new Image();
+                
+                img.onload = () => {
+                    try {
+                        // 计算压缩后的尺寸，保持宽高比
+                        const maxSize = 1024; // 最大尺寸限制
+                        const minSize = 50;   // 最小尺寸限制，确保符合API要求
+                        let { width, height } = img;
+                        
+                        console.log(`原始图片尺寸: ${width}x${height}`);
+                        
+                        // 确保原始图片尺寸不为0
+                        if (width <= 0 || height <= 0) {
+                            throw new Error('图片尺寸无效');
+                        }
+                        
+                        // 计算缩放比例
+                        let scale = 1;
+                        
+                        // 如果图片太大，需要缩小
+                        if (width > maxSize || height > maxSize) {
+                            scale = Math.min(maxSize / width, maxSize / height);
+                        }
+                        
+                        // 如果图片太小，需要放大
+                        if (width < minSize || height < minSize) {
+                            scale = Math.max(minSize / width, minSize / height);
+                        }
+                        
+                        // 应用缩放
+                        width = Math.round(width * scale);
+                        height = Math.round(height * scale);
+                        
+                        // 再次确保尺寸符合要求
+                        width = Math.max(minSize, Math.min(maxSize, width));
+                        height = Math.max(minSize, Math.min(maxSize, height));
+                        
+                        // 设置canvas尺寸
+                        canvas.width = width;
+                        canvas.height = height;
+                        
+                        // 绘制图片到canvas
+                        ctx.drawImage(img, 0, 0, width, height);
+                        
+                        // 转换为JPEG格式的base64，质量设为0.8
+                        const dataUri = canvas.toDataURL('image/jpeg', 0.8);
+                        
+                        console.log(`图片处理完成: 原始尺寸 ${img.width}x${img.height} -> 压缩尺寸 ${width}x${height}`);
+                        console.log(`缩放比例: ${scale.toFixed(3)}`);
+                        console.log(`Data URI 长度: ${dataUri.length} 字符`);
+                        
+                        // 验证生成的图片数据
+                        if (dataUri.length < 100) {
+                            throw new Error('生成的图片数据异常短，可能处理失败');
+                        }
+                        
+                        processedImageData = dataUri;
+                        
+                        // 更新显示信息
+                        const processingInfo = document.getElementById('processing-info');
+                        processingInfo.innerHTML = `
+                            <div class="success">
+                                ✅ 图片处理成功<br>
+                                原始尺寸: ${img.width}x${img.height}<br>
+                                处理后尺寸: ${width}x${height}<br>
+                                缩放比例: ${scale.toFixed(3)}<br>
+                                Data URI 长度: ${dataUri.length} 字符
+                            </div>
+                        `;
+                        
+                        // 启用AI测试按钮
+                        document.getElementById('ai-test-btn').disabled = false;
+                        
+                        resolve(dataUri);
+                    } catch (error) {
+                        console.error('图片处理失败:', error);
+                        const processingInfo = document.getElementById('processing-info');
+                        processingInfo.innerHTML = `<div class="error">❌ 图片处理失败: ${error.message}</div>`;
+                        reject(error);
+                    }
+                };
+                
+                img.onerror = () => {
+                    const processingInfo = document.getElementById('processing-info');
+                    processingInfo.innerHTML = `<div class="error">❌ 图片加载失败</div>`;
+                    reject(new Error('图片加载失败'));
+                };
+                
+                // 创建图片URL
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    img.src = e.target.result;
+                };
+                reader.onerror = () => {
+                    const processingInfo = document.getElementById('processing-info');
+                    processingInfo.innerHTML = `<div class="error">❌ 文件读取失败</div>`;
+                    reject(new Error('文件读取失败'));
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        // 测试AI识别
+        async function testAIRecognition() {
+            const resultDiv = document.getElementById('ai-result');
+            
+            if (!processedImageData) {
+                resultDiv.innerHTML = '<div class="error">❌ 请先选择并处理图片</div>';
+                return;
+            }
+            
+            resultDiv.innerHTML = '正在进行AI识别...';
+            
+            try {
+                const requestBody = {
+                    imageUrl: processedImageData,
+                    prompt: '这是一张食物照片，请识别图片中的食物种类、营养成分和大概的卡路里含量。请用中文回答，并尽量提供详细的营养信息。'
+                };
+                
+                console.log('发送AI识别请求:', {
+                    imageUrlLength: processedImageData.length,
+                    prompt: requestBody.prompt
+                });
+                
+                const response = await fetch('http://localhost:3000/api/vision/analyze', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(requestBody)
+                });
+                
+                const data = await response.json();
+                console.log('AI识别响应:', data);
+                
+                if (response.ok && data.success) {
+                    resultDiv.innerHTML = `
+                        <div class="success">
+                            ✅ AI识别成功<br>
+                            <strong>识别结果:</strong><br>
+                            ${data.data.description}
+                        </div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="error">
+                            ❌ AI识别失败<br>
+                            错误: ${data.error || '未知错误'}<br>
+                            详细信息: ${data.message || '无详细信息'}
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error('AI识别错误:', error);
+                resultDiv.innerHTML = `<div class="error">❌ AI识别错误: ${error.message}</div>`;
+            }
+        }
+
+        // 页面加载时自动测试后端连接
+        window.onload = function() {
+            testBackendConnection();
+        };
+    </script>
+</body>
+</html>

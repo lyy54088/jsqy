@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>应用诊断工具</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .status {
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            font-weight: bold;
+        }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .warning { background: #fff3cd; color: #856404; }
+        .info { background: #d1ecf1; color: #0c5460; }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .danger {
+            background: #dc3545;
+        }
+        .danger:hover {
+            background: #c82333;
+        }
+        .log-area {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 15px;
+            margin: 15px 0;
+            font-family: monospace;
+            font-size: 14px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+        .test-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 应用诊断工具</h1>
+        
+        <div id="status" class="status info">
+            点击下方按钮开始诊断
+        </div>
+        
+        <div class="test-grid">
+            <button onclick="testFrontend()">🌐 测试前端</button>
+            <button onclick="testBackend()">🔧 测试后端</button>
+            <button onclick="checkLocalStorage()">💾 检查存储</button>
+            <button onclick="testRoutes()">🛣️ 测试路由</button>
+            <button onclick="clearAllData()" class="danger">🗑️ 清除数据</button>
+            <button onclick="openApp()">🚀 打开应用</button>
+        </div>
+        
+        <div id="logs" class="log-area">
+            诊断日志将显示在这里...
+        </div>
+    </div>
+
+    <script>
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const logArea = document.getElementById('logs');
+            const statusDiv = document.getElementById('status');
+            
+            const logMessage = `[${timestamp}] ${message}`;
+            logArea.innerHTML += logMessage + '\n';
+            logArea.scrollTop = logArea.scrollHeight;
+            
+            statusDiv.textContent = message;
+            statusDiv.className = `status ${type}`;
+        }
+
+        async function testFrontend() {
+            log('🌐 测试前端服务器...', 'info');
+            
+            try {
+                const response = await fetch('http://localhost:5173/');
+                if (response.ok) {
+                    log('✅ 前端服务器响应正常', 'success');
+                    
+                    // 检查响应内容
+                    const text = await response.text();
+                    if (text.includes('<!DOCTYPE html>')) {
+                        log('✅ 前端返回HTML内容正常', 'success');
+                    } else {
+                        log('⚠️ 前端返回内容异常', 'warning');
+                    }
+                } else {
+                    log(`❌ 前端服务器响应错误: ${response.status}`, 'error');
+                }
+            } catch (error) {
+                log(`❌ 前端服务器连接失败: ${error.message}`, 'error');
+            }
+        }
+
+        async function testBackend() {
+            log('🔧 测试后端服务器...', 'info');
+            
+            try {
+                const response = await fetch('http://localhost:3000/health');
+                if (response.ok) {
+                    const data = await response.json();
+                    log(`✅ 后端服务器健康检查通过: ${JSON.stringify(data)}`, 'success');
+                } else {
+                    log(`❌ 后端健康检查失败: ${response.status}`, 'error');
+                }
+            } catch (error) {
+                log(`❌ 后端服务器连接失败: ${error.message}`, 'error');
+            }
+            
+            // 测试API接口
+            try {
+                const response = await fetch('http://localhost:3000/api/test');
+                if (response.ok) {
+                    const data = await response.json();
+                    log(`✅ 后端API测试通过: ${JSON.stringify(data)}`, 'success');
+                } else {
+                    log(`❌ 后端API测试失败: ${response.status}`, 'error');
+                }
+            } catch (error) {
+                log(`❌ 后端API连接失败: ${error.message}`, 'error');
+            }
+        }
+
+        function checkLocalStorage() {
+            log('💾 检查本地存储...', 'info');
+            
+            try {
+                const keys = Object.keys(localStorage);
+                log(`📦 localStorage键数量: ${keys.length}`, 'info');
+                
+                keys.forEach(key => {
+                    const value = localStorage.getItem(key);
+                    log(`🔑 ${key}: ${value ? value.substring(0, 100) + '...' : 'null'}`, 'info');
+                });
+                
+                // 检查应用特定的存储
+                const appData = localStorage.getItem('fitness-contract-storage');
+                if (appData) {
+                    try {
+                        const parsed = JSON.parse(appData);
+                        log(`✅ 应用数据解析成功`, 'success');
+                        log(`👤 用户: ${parsed.state?.user ? '存在' : '不存在'}`, 'info');
+                        log(`📋 契约: ${parsed.state?.currentContract ? '存在' : '不存在'}`, 'info');
+                    } catch (e) {
+                        log(`❌ 应用数据解析失败: ${e.message}`, 'error');
+                    }
+                } else {
+                    log('ℹ️ 没有应用数据', 'info');
+                }
+                
+            } catch (error) {
+                log(`❌ 检查localStorage失败: ${error.message}`, 'error');
+            }
+        }
+
+        async function testRoutes() {
+            log('🛣️ 测试应用路由...', 'info');
+            
+            const routes = [
+                '/',
+                '/auth',
+                '/dashboard'
+            ];
+            
+            for (const route of routes) {
+                try {
+                    const response = await fetch(`http://localhost:5173${route}`);
+                    if (response.ok) {
+                        log(`✅ 路由 ${route} 响应正常`, 'success');
+                    } else {
+                        log(`❌ 路由 ${route} 响应错误: ${response.status}`, 'error');
+                    }
+                } catch (error) {
+                    log(`❌ 路由 ${route} 测试失败: ${error.message}`, 'error');
+                }
+            }
+        }
+
+        function clearAllData() {
+            if (confirm('确定要清除所有本地数据吗？')) {
+                log('🗑️ 清除所有本地数据...', 'warning');
+                localStorage.clear();
+                sessionStorage.clear();
+                log('✅ 数据已清除', 'success');
+            }
+        }
+
+        function openApp() {
+            log('🚀 打开应用...', 'info');
+            window.open('http://localhost:5173/', '_blank');
+        }
+
+        // 页面加载时自动运行基础检查
+        window.onload = function() {
+            log('🔍 开始自动诊断...', 'info');
+            setTimeout(() => {
+                testFrontend();
+                setTimeout(() => {
+                    testBackend();
+                    setTimeout(() => {
+                        checkLocalStorage();
+                    }, 1000);
+                }, 1000);
+            }, 500);
+        };
+    </script>
+</body>
+</html>

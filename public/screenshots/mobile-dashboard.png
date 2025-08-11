@@ -1,0 +1,80 @@
+<svg width="750" height="1334" viewBox="0 0 750 1334" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- 背景 -->
+  <rect width="750" height="1334" fill="#f8fafc"/>
+  
+  <!-- 状态栏 -->
+  <rect x="0" y="0" width="750" height="44" fill="#1f2937"/>
+  <text x="30" y="28" font-family="Arial" font-size="14" fill="white">9:41</text>
+  <text x="650" y="28" font-family="Arial" font-size="14" fill="white">100%</text>
+  
+  <!-- 头部 -->
+  <rect x="0" y="44" width="750" height="80" fill="#3b82f6"/>
+  <text x="30" y="94" font-family="Arial" font-size="20" font-weight="bold" fill="white">健身教练</text>
+  
+  <!-- 主要内容 -->
+  <rect x="20" y="144" width="710" height="1150" fill="white" rx="12"/>
+  
+  <!-- 今日打卡卡片 -->
+  <rect x="40" y="180" width="670" height="120" fill="#dbeafe" rx="8"/>
+  <text x="60" y="210" font-family="Arial" font-size="16" font-weight="bold" fill="#1e40af">今日打卡进度</text>
+  <text x="60" y="260" font-family="Arial" font-size="28" font-weight="bold" fill="#3b82f6">3/5 完成</text>
+  
+  <!-- 统计网格 -->
+  <rect x="40" y="320" width="320" height="100" fill="#dcfce7" rx="8"/>
+  <text x="60" y="350" font-family="Arial" font-size="14" font-weight="bold" fill="#166534">本周目标</text>
+  <text x="60" y="390" font-family="Arial" font-size="24" font-weight="bold" fill="#16a34a">85%</text>
+  
+  <rect x="390" y="320" width="320" height="100" fill="#fef3c7" rx="8"/>
+  <text x="410" y="350" font-family="Arial" font-size="14" font-weight="bold" fill="#92400e">总时长</text>
+  <text x="410" y="390" font-family="Arial" font-size="24" font-weight="bold" fill="#d97706">24小时</text>
+  
+  <!-- 训练计划 -->
+  <rect x="40" y="450" width="670" height="200" fill="#f1f5f9" rx="8"/>
+  <text x="60" y="480" font-family="Arial" font-size="16" font-weight="bold" fill="#334155">今日训练计划</text>
+  
+  <!-- 训练项目列表 -->
+  <rect x="60" y="500" width="630" height="40" fill="white" rx="4"/>
+  <text x="80" y="525" font-family="Arial" font-size="14" fill="#475569">✓ 热身运动 (10分钟)</text>
+  
+  <rect x="60" y="550" width="630" height="40" fill="white" rx="4"/>
+  <text x="80" y="575" font-family="Arial" font-size="14" fill="#475569">✓ 力量训练 (30分钟)</text>
+  
+  <rect x="60" y="600" width="630" height="40" fill="#fef2f2" rx="4"/>
+  <text x="80" y="625" font-family="Arial" font-size="14" fill="#dc2626">○ 有氧运动 (20分钟)</text>
+  
+  <!-- AI教练消息 -->
+  <rect x="40" y="680" width="670" height="150" fill="#f0f9ff" rx="8" stroke="#0ea5e9" stroke-width="1"/>
+  <text x="60" y="710" font-family="Arial" font-size="16" font-weight="bold" fill="#0c4a6e">AI教练建议</text>
+  <text x="60" y="740" font-family="Arial" font-size="14" fill="#075985">今天的训练表现很棒！建议在</text>
+  <text x="60" y="760" font-family="Arial" font-size="14" fill="#075985">有氧运动中加入间歇训练，可以</text>
+  <text x="60" y="780" font-family="Arial" font-size="14" fill="#075985">更好地提升心肺功能。</text>
+  
+  <!-- 快速操作按钮 -->
+  <rect x="40" y="860" width="670" height="120" fill="#f8fafc" rx="8"/>
+  <text x="60" y="890" font-family="Arial" font-size="16" font-weight="bold" fill="#334155">快速操作</text>
+  
+  <rect x="60" y="910" width="200" height="50" fill="#3b82f6" rx="6"/>
+  <text x="140" y="940" font-family="Arial" font-size="14" font-weight="bold" fill="white" text-anchor="middle">开始训练</text>
+  
+  <rect x="280" y="910" width="200" height="50" fill="#16a34a" rx="6"/>
+  <text x="360" y="940" font-family="Arial" font-size="14" font-weight="bold" fill="white" text-anchor="middle">完成打卡</text>
+  
+  <rect x="500" y="910" width="200" height="50" fill="#d97706" rx="6"/>
+  <text x="580" y="940" font-family="Arial" font-size="14" font-weight="bold" fill="white" text-anchor="middle">AI咨询</text>
+  
+  <!-- 底部导航 -->
+  <rect x="0" y="1250" width="750" height="84" fill="white" stroke="#e2e8f0" stroke-width="1"/>
+  
+  <!-- 导航图标 -->
+  <circle cx="150" cy="1280" r="20" fill="#3b82f6"/>
+  <text x="150" y="1310" font-family="Arial" font-size="12" fill="#3b82f6" text-anchor="middle">首页</text>
+  
+  <circle cx="300" cy="1280" r="20" fill="#6b7280"/>
+  <text x="300" y="1310" font-family="Arial" font-size="12" fill="#6b7280" text-anchor="middle">打卡</text>
+  
+  <circle cx="450" cy="1280" r="20" fill="#6b7280"/>
+  <text x="450" y="1310" font-family="Arial" font-size="12" fill="#6b7280" text-anchor="middle">AI教练</text>
+  
+  <circle cx="600" cy="1280" r="20" fill="#6b7280"/>
+  <text x="600" y="1310" font-family="Arial" font-size="12" fill="#6b7280" text-anchor="middle">我的</text>
+</svg>

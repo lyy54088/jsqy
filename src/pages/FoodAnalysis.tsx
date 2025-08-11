@@ -1,21 +1,20 @@
 import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Camera, Upload, Brain, Utensils, CheckCircle, AlertCircle, Loader } from 'lucide-react';
-import { analyzeFoodImage, imageToBase64, type FoodAnalysisResult } from '@/lib/food-analysis-api';
+import { ArrowLeft, Camera, Upload, Utensils } from 'lucide-react';
 
 const FoodAnalysis: React.FC = () => {
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [mealType, setMealType] = useState<'breakfast' | 'lunch' | 'dinner'>('lunch');
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [analysisResult, setAnalysisResult] = useState<FoodAnalysisResult | null>(null);
+  const [mealType, setMealType] = useState<'breakfast' | 'lunch' | 'dinner' | 'snack' | 'protein'>('lunch');
 
   const mealTypes = [
-    { value: 'breakfast' as const, label: '早餐', icon: '🥐', description: '营养均衡的早餐' },
-    { value: 'lunch' as const, label: '午餐', icon: '🍽️', description: '丰富的午餐' },
-    { value: 'dinner' as const, label: '晚餐', icon: '🍲', description: '清淡的晚餐' },
+    { value: 'breakfast' as const, label: '早餐', icon: '🥐' },
+    { value: 'lunch' as const, label: '午餐', icon: '🍽️' },
+    { value: 'dinner' as const, label: '晚餐', icon: '🍲' },
+    { value: 'snack' as const, label: '健身', icon: '💪' },
+    { value: 'protein' as const, label: '蛋白质', icon: '🥛' },
   ];
 
   // 处理图片选择
@@ -26,31 +25,8 @@ const FoodAnalysis: React.FC = () => {
       const reader = new FileReader();
       reader.onload = (e) => {
         setSelectedImage(e.target?.result as string);
-        setAnalysisResult(null); // 清除之前的分析结果
       };
       reader.readAsDataURL(file);
-    }
-  };
-
-  // 分析图片
-  const analyzeImage = async () => {
-    if (!selectedFile) return;
-
-    setIsAnalyzing(true);
-    setAnalysisResult(null);
-
-    try {
-      const base64Image = await imageToBase64(selectedFile);
-      const result = await analyzeFoodImage({
-        imageBase64: base64Image,
-        mealType: mealType
-      });
-      setAnalysisResult(result);
-    } catch (error) {
-      console.error('分析失败:', error);
-      // 显示错误信息
-    } finally {
-      setIsAnalyzing(false);
     }
   };
 
@@ -58,7 +34,6 @@ const FoodAnalysis: React.FC = () => {
   const resetSelection = () => {
     setSelectedImage(null);
     setSelectedFile(null);
-    setAnalysisResult(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -77,8 +52,8 @@ const FoodAnalysis: React.FC = () => {
               <ArrowLeft className="w-5 h-5 text-gray-600" />
             </button>
             <div className="flex items-center gap-2">
-              <Brain className="w-6 h-6 text-blue-600" />
-              <h1 className="text-xl font-bold text-gray-900">AI食物分析</h1>
+              <Camera className="w-6 h-6 text-blue-600" />
+              <h1 className="text-xl font-bold text-gray-900">食物记录</h1>
             </div>
           </div>
         </div>
@@ -89,10 +64,10 @@ const FoodAnalysis: React.FC = () => {
         <div className="bg-white rounded-xl p-4 shadow-sm">
           <h2 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
             <Utensils className="w-5 h-5 text-blue-600" />
-            选择餐食类型
+            选择打卡类型
           </h2>
           <div className="grid grid-cols-3 gap-3">
-            {mealTypes.map((type) => (
+            {mealTypes.slice(0, 3).map((type) => (
               <button
                 key={type.value}
                 onClick={() => setMealType(type.value)}
@@ -107,13 +82,32 @@ const FoodAnalysis: React.FC = () => {
               </button>
             ))}
           </div>
+          <div className="grid grid-cols-2 gap-3 mt-3">
+            {mealTypes.slice(3).map((type) => (
+              <button
+                key={type.value}
+                onClick={() => setMealType(type.value)}
+                className={`p-3 rounded-lg border-2 transition-colors text-center ${
+                  mealType === type.value
+                    ? 'border-blue-500 bg-blue-50 text-blue-700'
+                    : 'border-gray-200 hover:border-gray-300'
+                }`}
+              >
+                <div className="text-2xl mb-1">{type.icon}</div>
+                <div className="text-sm font-medium">{type.label}</div>
+              </button>
+            ))}
+          </div>
+          <p className="text-xs text-blue-600 mt-2">
+            蛋白质: 蛋白质补充
+          </p>
         </div>
 
         {/* 图片上传区域 */}
         <div className="bg-white rounded-xl p-4 shadow-sm">
           <h2 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
             <Camera className="w-5 h-5 text-blue-600" />
-            上传食物图片
+            拍照上传
           </h2>
           
           {!selectedImage ? (
@@ -154,148 +148,27 @@ const FoodAnalysis: React.FC = () => {
               </div>
               
               <button
-                onClick={analyzeImage}
-                disabled={isAnalyzing}
-                className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
+                onClick={() => {
+                  // 简单的保存功能，暂时只是显示成功消息
+                  alert('图片已保存！');
+                }}
+                className="w-full py-3 rounded-lg font-semibold transition-colors flex items-center justify-center gap-2 bg-blue-600 text-white hover:bg-blue-700"
               >
-                {isAnalyzing ? (
-                  <>
-                    <Loader className="w-5 h-5 animate-spin" />
-                    AI分析中...
-                  </>
-                ) : (
-                  <>
-                    <Brain className="w-5 h-5" />
-                    开始AI分析
-                  </>
-                )}
+                <Camera className="w-5 h-5" />
+                保存记录
               </button>
             </div>
           )}
         </div>
 
-        {/* 分析结果 */}
-        {analysisResult && (
-          <div className="bg-white rounded-xl p-4 shadow-sm">
-            <h2 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
-              <Brain className="w-5 h-5 text-blue-600" />
-              AI分析结果
-            </h2>
-            
-            <div className="space-y-4">
-              {/* 识别状态 */}
-              <div className="flex items-center gap-2 p-3 bg-green-50 rounded-lg">
-                {analysisResult.recognized ? (
-                  <CheckCircle className="w-5 h-5 text-green-600" />
-                ) : (
-                  <AlertCircle className="w-5 h-5 text-yellow-600" />
-                )}
-                <span className={`font-semibold ${
-                  analysisResult.recognized ? 'text-green-700' : 'text-yellow-700'
-                }`}>
-                  {analysisResult.recognized ? 'AI识别成功' : '需要人工审核'}
-                </span>
-                <span className="text-sm text-gray-600">
-                  置信度: {Math.round(analysisResult.confidence * 100)}%
-                </span>
-              </div>
-              
-              <p className="text-sm text-gray-700">{analysisResult.description}</p>
-              
-              {/* 识别到的食物 */}
-              {analysisResult.foodItems && analysisResult.foodItems.length > 0 && (
-                <div>
-                  <h4 className="text-sm font-medium text-gray-700 mb-2">识别到的食物:</h4>
-                  <div className="flex flex-wrap gap-2">
-                    {analysisResult.foodItems.map((food, index) => (
-                      <span
-                        key={index}
-                        className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full"
-                      >
-                        {food}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-              
-              {/* 健康评分 */}
-              {analysisResult.healthScore && (
-                <div>
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="text-sm text-gray-600">健康评分:</span>
-                    <span className="text-sm font-medium text-green-600">
-                      {Math.round(analysisResult.healthScore!)}/100
-                    </span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div 
-                      className="bg-green-500 h-2 rounded-full transition-all duration-300"
-                      style={{ width: `${analysisResult.healthScore}%` }}
-                    />
-                  </div>
-                </div>
-              )}
-              
-              {/* 营养信息 */}
-              {analysisResult.nutritionInfo && Object.keys(analysisResult.nutritionInfo).length > 0 && (
-                <div>
-                  <h4 className="text-sm font-medium text-gray-700 mb-2">营养信息:</h4>
-                  <div className="grid grid-cols-2 gap-2 text-xs">
-                    {analysisResult.nutritionInfo.calories && (
-                      <div className="bg-gray-50 p-2 rounded border">
-                        <span className="text-gray-600">卡路里:</span>
-                        <span className="font-medium ml-1">{analysisResult.nutritionInfo.calories}kcal</span>
-                      </div>
-                    )}
-                    {analysisResult.nutritionInfo.protein && (
-                      <div className="bg-gray-50 p-2 rounded border">
-                        <span className="text-gray-600">蛋白质:</span>
-                        <span className="font-medium ml-1">{analysisResult.nutritionInfo.protein}g</span>
-                      </div>
-                    )}
-                    {analysisResult.nutritionInfo.carbs && (
-                      <div className="bg-gray-50 p-2 rounded border">
-                        <span className="text-gray-600">碳水:</span>
-                        <span className="font-medium ml-1">{analysisResult.nutritionInfo.carbs}g</span>
-                      </div>
-                    )}
-                    {analysisResult.nutritionInfo.fat && (
-                      <div className="bg-gray-50 p-2 rounded border">
-                        <span className="text-gray-600">脂肪:</span>
-                        <span className="font-medium ml-1">{analysisResult.nutritionInfo.fat}g</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-              
-              {/* 健康建议 */}
-              {analysisResult.recommendations && analysisResult.recommendations.length > 0 && (
-                <div>
-                  <h4 className="text-sm font-medium text-gray-700 mb-2">健康建议:</h4>
-                  <ul className="text-xs text-gray-600 space-y-1">
-                    {analysisResult.recommendations.map((rec, index) => (
-                      <li key={index} className="flex items-start gap-1">
-                        <span className="text-blue-500 mt-0.5">•</span>
-                        <span>{rec}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
         {/* 使用说明 */}
         <div className="bg-blue-50 rounded-xl p-4">
           <h3 className="text-sm font-medium text-blue-900 mb-2">使用说明</h3>
           <ul className="text-xs text-blue-700 space-y-1">
-            <li>• 选择对应的餐食类型以获得更准确的分析</li>
-            <li>• 确保图片清晰，食物占据画面主要部分</li>
-            <li>• AI会识别食物种类并提供营养分析和健康建议</li>
-            <li>• 分析结果仅供参考，具体营养需求请咨询专业营养师</li>
+            <li>• 选择对应的打卡类型</li>
+            <li>• 上传清晰的食物图片</li>
+            <li>• 点击保存记录完成打卡</li>
+            <li>• 记录将保存到您的健身日志中</li>
           </ul>
         </div>
       </div>

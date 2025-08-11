@@ -1,0 +1,36 @@
+﻿<svg width="400" height="300" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="meat" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" style="stop-color:#8B4513;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#654321;stop-opacity:1" />
+    </radialGradient>
+    <radialGradient id="sauce" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" style="stop-color:#A0522D;stop-opacity:0.8" />
+      <stop offset="100%" style="stop-color:#8B0000;stop-opacity:0.9" />
+    </radialGradient>
+  </defs>
+  
+  <!-- 背景盘子 -->
+  <circle cx="200" cy="150" r="140" fill="#F5F5DC" stroke="#D3D3D3" stroke-width="3"/>
+  
+  <!-- 红烧肉块 -->
+  <rect x="120" y="100" width="40" height="30" rx="5" fill="url(#meat)" stroke="#654321" stroke-width="1"/>
+  <rect x="180" y="90" width="45" height="35" rx="5" fill="url(#meat)" stroke="#654321" stroke-width="1"/>
+  <rect x="240" y="110" width="38" height="28" rx="5" fill="url(#meat)" stroke="#654321" stroke-width="1"/>
+  <rect x="150" y="140" width="42" height="32" rx="5" fill="url(#meat)" stroke="#654321" stroke-width="1"/>
+  <rect x="210" y="135" width="40" height="30" rx="5" fill="url(#meat)" stroke="#654321" stroke-width="1"/>
+  <rect x="130" y="180" width="35" height="25" rx="5" fill="url(#meat)" stroke="#654321" stroke-width="1"/>
+  <rect x="190" y="175" width="38" height="28" rx="5" fill="url(#meat)" stroke="#654321" stroke-width="1"/>
+  <rect x="250" y="160" width="36" height="26" rx="5" fill="url(#meat)" stroke="#654321" stroke-width="1"/>
+  
+  <!-- 红烧汁 -->
+  <ellipse cx="200" cy="150" rx="100" ry="60" fill="url(#sauce)" opacity="0.6"/>
+  
+  <!-- 葱花装饰 -->
+  <ellipse cx="170" cy="120" rx="3" ry="8" fill="#228B22" transform="rotate(15 170 120)"/>
+  <ellipse cx="220" cy="140" rx="3" ry="8" fill="#228B22" transform="rotate(-20 220 140)"/>
+  <ellipse cx="190" cy="170" rx="3" ry="8" fill="#228B22" transform="rotate(30 190 170)"/>
+  
+  <!-- 文字标识 -->
+  <text x="200" y="280" text-anchor="middle" font-family="Arial" font-size="16" fill="#8B4513">红烧肉</text>
+</svg>

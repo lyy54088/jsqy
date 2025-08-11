@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>强制清理数据</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .warning {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        .success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        button {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-right: 10px;
+        }
+        button:hover {
+            background: #c82333;
+        }
+        .safe-btn {
+            background: #28a745;
+        }
+        .safe-btn:hover {
+            background: #218838;
+        }
+        pre {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 5px;
+            overflow-x: auto;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚨 健身教练应用 - 数据清理工具</h1>
+        
+        <div class="warning">
+            <strong>⚠️ 警告：</strong>检测到您的应用显示了500元保证金，但您并未支付任何费用。这是由于localStorage中残留的测试数据导致的。
+        </div>
+        
+        <h3>当前存储数据：</h3>
+        <pre id="current-data">正在检查...</pre>
+        
+        <h3>操作选项：</h3>
+        <button onclick="forceCleanAll()">🧹 强制清理所有数据</button>
+        <button onclick="checkData()" class="safe-btn">🔍 重新检查数据</button>
+        
+        <div id="result"></div>
+        
+        <h3>清理后的操作：</h3>
+        <ol>
+            <li>点击"强制清理所有数据"按钮</li>
+            <li>等待清理完成</li>
+            <li>返回应用主页面</li>
+            <li>确认不再显示500元保证金</li>
+        </ol>
+    </div>
+
+    <script>
+        function checkData() {
+            const data = {};
+            
+            // 检查所有localStorage数据
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                try {
+                    const value = localStorage.getItem(key);
+                    data[key] = JSON.parse(value);
+                } catch (e) {
+                    data[key] = value;
+                }
+            }
+            
+            document.getElementById('current-data').textContent = JSON.stringify(data, null, 2);
+            
+            // 检查是否有问题数据
+            const fitnessData = localStorage.getItem('fitness-contract-storage');
+            if (fitnessData) {
+                try {
+                    const parsed = JSON.parse(fitnessData);
+                    const state = parsed.state;
+                    
+                    if (state?.currentContract && 
+                        (state.currentContract.amount === 500 || state.currentContract.remainingAmount === 500) &&
+                        !state?.user) {
+                        document.getElementById('result').innerHTML = 
+                            '<div class="warning"><strong>🚨 发现问题：</strong>检测到500元保证金但没有用户数据！</div>';
+                    } else if (!state?.user && state?.currentContract) {
+                        document.getElementById('result').innerHTML = 
+                            '<div class="warning"><strong>🚨 发现问题：</strong>检测到契约数据但没有用户！</div>';
+                    } else {
+                        document.getElementById('result').innerHTML = 
+                            '<div class="success"><strong>✅ 数据正常：</strong>没有发现问题数据。</div>';
+                    }
+                } catch (e) {
+                    document.getElementById('result').innerHTML = 
+                        '<div class="warning"><strong>⚠️ 数据损坏：</strong>localStorage数据格式错误，建议清理。</div>';
+                }
+            } else {
+                document.getElementById('result').innerHTML = 
+                    '<div class="success"><strong>✅ 无数据：</strong>没有找到健身应用数据。</div>';
+            }
+        }
+        
+        function forceCleanAll() {
+            if (confirm('确定要清理所有数据吗？这将删除所有本地存储的数据。')) {
+                // 清理localStorage
+                localStorage.clear();
+                
+                // 清理sessionStorage
+                sessionStorage.clear();
+                
+                // 清理IndexedDB（如果有）
+                if ('indexedDB' in window) {
+                    indexedDB.databases().then(databases => {
+                        databases.forEach(db => {
+                            indexedDB.deleteDatabase(db.name);
+                        });
+                    }).catch(e => console.log('清理IndexedDB时出错:', e));
+                }
+                
+                document.getElementById('result').innerHTML = 
+                    '<div class="success"><strong>✅ 清理完成！</strong>所有数据已清理，请返回应用主页面。</div>';
+                
+                // 重新检查数据
+                setTimeout(checkData, 500);
+                
+                alert('数据清理完成！请返回健身教练应用主页面，确认500元保证金问题已解决。');
+            }
+        }
+        
+        // 页面加载时自动检查数据
+        window.onload = checkData;
+    </script>
+</body>
+</html>

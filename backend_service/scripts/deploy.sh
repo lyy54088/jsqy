@@ -68,9 +68,9 @@ check_env_vars() {
             exit 1
         fi
         
-        if [ -z "$DEEPSEEK_API_KEY" ]; then
-            log_error "生产环境必须设置 DEEPSEEK_API_KEY 环境变量"
-            exit 1
+        # AI服务配置为可选
+        if [ -z "$AI_API_KEY" ]; then
+            log_warning "未设置 AI_API_KEY，AI功能将不可用"
         fi
         
         if [ -z "$MONGO_ROOT_PASSWORD" ]; then

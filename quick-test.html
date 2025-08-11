@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>快速测试 - 健身应用状态</title>
+    <style>
+        body {
+            font-family: 'Microsoft YaHei', sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: white;
+        }
+        .container {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
+        }
+        .status {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            border-left: 5px solid #4CAF50;
+        }
+        .error {
+            border-left-color: #f44336;
+            background: rgba(244, 67, 54, 0.2);
+        }
+        .warning {
+            border-left-color: #ff9800;
+            background: rgba(255, 152, 0, 0.2);
+        }
+        button {
+            background: linear-gradient(45deg, #4CAF50, #45a049);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+            transition: all 0.3s ease;
+        }
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+        .danger {
+            background: linear-gradient(45deg, #f44336, #d32f2f);
+        }
+        .info {
+            background: linear-gradient(45deg, #2196F3, #1976D2);
+        }
+        pre {
+            background: rgba(0,0,0,0.3);
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        .link-button {
+            display: inline-block;
+            text-decoration: none;
+            color: white;
+            background: linear-gradient(45deg, #9C27B0, #7B1FA2);
+            padding: 12px 24px;
+            border-radius: 8px;
+            margin: 10px 5px;
+            transition: all 0.3s ease;
+        }
+        .link-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 健身应用状态检测</h1>
+        
+        <div id="status" class="status">
+            <h3>📊 当前状态</h3>
+            <p id="statusText">正在检查...</p>
+        </div>
+
+        <div class="status">
+            <h3>🛠️ 操作选项</h3>
+            <button onclick="checkData()" class="info">🔍 重新检查数据</button>
+            <button onclick="forceClean()" class="danger">🧹 强制清理所有数据</button>
+            <button onclick="addTestData()" class="warning">⚠️ 添加500元测试数据</button>
+        </div>
+
+        <div class="status">
+            <h3>🔗 快速访问</h3>
+            <a href="http://localhost:5175" class="link-button" target="_blank">🏠 主应用</a>
+            <a href="http://localhost:5175?clean=true" class="link-button" target="_blank">🧹 强制清理访问</a>
+        </div>
+
+        <div class="status">
+            <h3>📋 localStorage 内容</h3>
+            <pre id="localStorageContent">正在加载...</pre>
+        </div>
+
+        <div class="status">
+            <h3>📝 操作日志</h3>
+            <pre id="log">页面已加载，开始检查数据...\n</pre>
+        </div>
+    </div>
+
+    <script>
+        function log(message) {
+            const logElement = document.getElementById('log');
+            const timestamp = new Date().toLocaleTimeString();
+            logElement.textContent += `[${timestamp}] ${message}\n`;
+            logElement.scrollTop = logElement.scrollHeight;
+        }
+
+        function updateLocalStorageDisplay() {
+            const content = document.getElementById('localStorageContent');
+            const items = [];
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                const value = localStorage.getItem(key);
+                items.push(`${key}: ${value.substring(0, 200)}${value.length > 200 ? '...' : ''}`);
+            }
+            content.textContent = items.length > 0 ? items.join('\n\n') : '空 - 没有localStorage数据';
+        }
+
+        function checkData() {
+            log('开始检查数据...');
+            const statusDiv = document.getElementById('status');
+            const statusText = document.getElementById('statusText');
+            
+            try {
+                const storageData = localStorage.getItem('fitness-contract-storage');
+                
+                if (!storageData) {
+                    statusDiv.className = 'status';
+                    statusText.innerHTML = '✅ <strong>无数据</strong>：没有找到健身应用数据，这是正确的初始状态。';
+                    log('✅ 没有发现localStorage数据');
+                    updateLocalStorageDisplay();
+                    return;
+                }
+
+                const data = JSON.parse(storageData);
+                const state = data.state;
+                
+                log('📦 发现localStorage数据，正在分析...');
+                
+                // 检查500元保证金
+                if (state?.currentContract && 
+                    (state.currentContract.amount === 500 || state.currentContract.remainingAmount === 500)) {
+                    statusDiv.className = 'status error';
+                    statusText.innerHTML = '🚨 <strong>发现问题</strong>：检测到500元保证金测试数据！这需要清理。';
+                    log('🚨 发现500元保证金数据！');
+                    updateLocalStorageDisplay();
+                    return;
+                }
+                
+                // 检查无用户但有契约
+                if (!state?.user && state?.currentContract) {
+                    statusDiv.className = 'status warning';
+                    statusText.innerHTML = '⚠️ <strong>数据异常</strong>：发现无用户但有契约的数据，建议清理。';
+                    log('⚠️ 发现无用户但有契约数据');
+                    updateLocalStorageDisplay();
+                    return;
+                }
+                
+                // 数据正常
+                statusDiv.className = 'status';
+                statusText.innerHTML = '✅ <strong>数据正常</strong>：健身应用数据检查通过。';
+                log('✅ 数据检查通过');
+                
+            } catch (error) {
+                statusDiv.className = 'status error';
+                statusText.innerHTML = '❌ <strong>数据错误</strong>：localStorage数据格式错误，建议清理。';
+                log(`❌ 数据解析错误: ${error.message}`);
+            }
+            
+            updateLocalStorageDisplay();
+        }
+
+        function forceClean() {
+            if (confirm('确定要清理所有数据吗？这将删除localStorage和sessionStorage中的所有内容。')) {
+                log('🧹 开始强制清理所有数据...');
+                localStorage.clear();
+                sessionStorage.clear();
+                log('✅ 所有数据已清理');
+                checkData();
+            }
+        }
+
+        function addTestData() {
+            if (confirm('确定要添加500元测试数据吗？这将用于测试清理功能。')) {
+                const testData = {
+                    state: {
+                        user: { id: 'test', name: '测试用户' },
+                        currentContract: {
+                            id: 'test-500',
+                            amount: 500,
+                            remainingAmount: 500,
+                            type: 'test'
+                        }
+                    }
+                };
+                localStorage.setItem('fitness-contract-storage', JSON.stringify(testData));
+                log('⚠️ 已添加500元测试数据');
+                checkData();
+            }
+        }
+
+        // 页面加载时自动检查
+        window.onload = function() {
+            log('页面加载完成，开始自动检查...');
+            checkData();
+        };
+
+        // 每5秒自动刷新状态
+        setInterval(function() {
+            updateLocalStorageDisplay();
+        }, 5000);
+    </script>
+</body>
+</html>

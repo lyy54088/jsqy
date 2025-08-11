@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>快速修复 - 服务不可用问题</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+        }
+        .fix-button {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 18px;
+            margin: 10px;
+            transition: background 0.3s;
+            width: 100%;
+            max-width: 300px;
+            display: block;
+            margin: 10px auto;
+        }
+        .fix-button:hover {
+            background: #c0392b;
+        }
+        .fix-button.success {
+            background: #27ae60;
+        }
+        .fix-button.success:hover {
+            background: #229954;
+        }
+        .status {
+            text-align: center;
+            margin: 20px 0;
+            padding: 15px;
+            border-radius: 8px;
+            font-weight: bold;
+        }
+        .status.success {
+            background: #d5f4e6;
+            color: #27ae60;
+            border: 1px solid #27ae60;
+        }
+        .status.error {
+            background: #fdeaea;
+            color: #e74c3c;
+            border: 1px solid #e74c3c;
+        }
+        .status.warning {
+            background: #fef9e7;
+            color: #f39c12;
+            border: 1px solid #f39c12;
+        }
+        .steps {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        .steps h3 {
+            color: #2c3e50;
+            margin-top: 0;
+        }
+        .steps ol {
+            padding-left: 20px;
+        }
+        .steps li {
+            margin: 10px 0;
+            line-height: 1.6;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚑 快速修复工具</h1>
+        
+        <div id="status" class="status warning">
+            正在检测问题...
+        </div>
+
+        <div class="steps">
+            <h3>🔧 自动修复步骤</h3>
+            <ol>
+                <li><strong>清除Service Worker</strong> - 移除可能损坏的缓存服务</li>
+                <li><strong>清除所有缓存</strong> - 删除浏览器缓存的旧文件</li>
+                <li><strong>重置本地存储</strong> - 清除可能损坏的应用数据</li>
+                <li><strong>强制刷新应用</strong> - 重新加载最新版本</li>
+            </ol>
+        </div>
+
+        <button id="autoFixBtn" class="fix-button" onclick="autoFix()">
+            🚀 一键自动修复
+        </button>
+
+        <button class="fix-button" onclick="manualSteps()">
+            📋 查看手动修复步骤
+        </button>
+
+        <button class="fix-button success" onclick="openApp()">
+            🏠 打开应用
+        </button>
+
+        <div id="manualStepsDiv" style="display: none;">
+            <div class="steps">
+                <h3>🛠️ 手动修复步骤</h3>
+                <ol>
+                    <li><strong>打开浏览器开发者工具</strong>
+                        <ul>
+                            <li>按 F12 或右键选择"检查"</li>
+                        </ul>
+                    </li>
+                    <li><strong>清除Service Worker</strong>
+                        <ul>
+                            <li>转到 Application 标签页</li>
+                            <li>在左侧找到 Service Workers</li>
+                            <li>点击 "Unregister" 注销所有Service Worker</li>
+                        </ul>
+                    </li>
+                    <li><strong>清除存储数据</strong>
+                        <ul>
+                            <li>在 Application 标签页中找到 Storage</li>
+                            <li>点击 "Clear storage"</li>
+                            <li>确保选中所有选项，然后点击 "Clear site data"</li>
+                        </ul>
+                    </li>
+                    <li><strong>硬刷新页面</strong>
+                        <ul>
+                            <li>按 Ctrl+Shift+R (Windows) 或 Cmd+Shift+R (Mac)</li>
+                            <li>或者按住 Shift 键点击刷新按钮</li>
+                        </ul>
+                    </li>
+                </ol>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let statusDiv = document.getElementById('status');
+        let autoFixBtn = document.getElementById('autoFixBtn');
+
+        // 页面加载时检测问题
+        window.addEventListener('load', async () => {
+            await detectIssues();
+        });
+
+        async function detectIssues() {
+            statusDiv.innerHTML = '🔍 正在检测问题...';
+            statusDiv.className = 'status warning';
+
+            let issues = [];
+
+            // 检查Service Worker
+            if ('serviceWorker' in navigator) {
+                try {
+                    const registrations = await navigator.serviceWorker.getRegistrations();
+                    if (registrations.length > 0) {
+                        issues.push('发现Service Worker注册');
+                    }
+                } catch (error) {
+                    issues.push('Service Worker检查失败');
+                }
+            }
+
+            // 检查缓存
+            if ('caches' in window) {
+                try {
+                    const cacheNames = await caches.keys();
+                    if (cacheNames.length > 0) {
+                        issues.push(`发现 ${cacheNames.length} 个缓存`);
+                    }
+                } catch (error) {
+                    issues.push('缓存检查失败');
+                }
+            }
+
+            // 检查本地存储
+            try {
+                const storageData = localStorage.getItem('fitness-contract-storage');
+                if (storageData) {
+                    const data = JSON.parse(storageData);
+                    const state = data.state;
+                    
+                    if (!state?.user && state?.currentContract) {
+                        issues.push('数据不一致：无用户但有契约');
+                    }
+                    
+                    if (state?.currentContract?.amount === 500) {
+                        issues.push('发现测试数据：500元保证金');
+                    }
+                }
+            } catch (error) {
+                issues.push('本地存储检查失败');
+            }
+
+            // 检查应用连接
+            try {
+                const response = await fetch('http://localhost:5173/', { 
+                    method: 'HEAD',
+                    cache: 'no-cache'
+                });
+                if (!response.ok) {
+                    issues.push('应用服务器响应异常');
+                }
+            } catch (error) {
+                issues.push('无法连接到应用服务器');
+            }
+
+            // 显示检测结果
+            if (issues.length === 0) {
+                statusDiv.innerHTML = '✅ 未发现明显问题，但仍可尝试修复';
+                statusDiv.className = 'status success';
+            } else {
+                statusDiv.innerHTML = `⚠️ 发现 ${issues.length} 个潜在问题：<br>• ${issues.join('<br>• ')}`;
+                statusDiv.className = 'status error';
+            }
+        }
+
+        async function autoFix() {
+            autoFixBtn.innerHTML = '🔄 修复中...';
+            autoFixBtn.disabled = true;
+
+            try {
+                // 步骤1: 注销Service Worker
+                statusDiv.innerHTML = '🔧 步骤1/4: 注销Service Worker...';
+                if ('serviceWorker' in navigator) {
+                    const registrations = await navigator.serviceWorker.getRegistrations();
+                    for (const registration of registrations) {
+                        await registration.unregister();
+                    }
+                }
+
+                // 步骤2: 清除缓存
+                statusDiv.innerHTML = '🔧 步骤2/4: 清除缓存...';
+                if ('caches' in window) {
+                    const cacheNames = await caches.keys();
+                    for (const cacheName of cacheNames) {
+                        await caches.delete(cacheName);
+                    }
+                }
+
+                // 步骤3: 清除本地存储
+                statusDiv.innerHTML = '🔧 步骤3/4: 清除本地存储...';
+                localStorage.clear();
+                sessionStorage.clear();
+
+                // 步骤4: 准备刷新
+                statusDiv.innerHTML = '🔧 步骤4/4: 准备刷新应用...';
+                statusDiv.className = 'status success';
+
+                autoFixBtn.innerHTML = '✅ 修复完成';
+                autoFixBtn.className = 'fix-button success';
+
+                // 3秒后自动打开应用
+                setTimeout(() => {
+                    statusDiv.innerHTML = '🚀 正在打开应用...';
+                    window.open('http://localhost:5173/?fixed=true', '_blank');
+                }, 3000);
+
+            } catch (error) {
+                statusDiv.innerHTML = `❌ 修复过程中出错: ${error.message}`;
+                statusDiv.className = 'status error';
+                autoFixBtn.innerHTML = '❌ 修复失败';
+                autoFixBtn.disabled = false;
+            }
+        }
+
+        function manualSteps() {
+            const manualDiv = document.getElementById('manualStepsDiv');
+            if (manualDiv.style.display === 'none') {
+                manualDiv.style.display = 'block';
+            } else {
+                manualDiv.style.display = 'none';
+            }
+        }
+
+        function openApp() {
+            window.open('http://localhost:5173/', '_blank');
+        }
+
+        // 监听来自应用的消息
+        window.addEventListener('message', (event) => {
+            if (event.data.type === 'app-loaded') {
+                statusDiv.innerHTML = '✅ 应用已成功加载！';
+                statusDiv.className = 'status success';
+            }
+        });
+    </script>
+</body>
+</html>

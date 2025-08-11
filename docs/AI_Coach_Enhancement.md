@@ -89,8 +89,7 @@ interface UserContext {
 ## 技术实现
 
 ### 文件修改
-1. **`src/lib/deepseek-api.ts`**：增强FitnessCoachAI类的用户上下文结构
-2. **`src/pages/AICoach.tsx`**：更新用户上下文创建逻辑，包含BMI计算
+1. **`src/pages/AICoach.tsx`**：更新用户上下文创建逻辑，包含BMI计算
 
 ### BMI计算逻辑
 ```javascript
@@ -115,6 +114,5 @@ const getBMIStatus = (bmi) => {
 
 ## 注意事项
 
-- 需要配置有效的DeepSeek API密钥才能体验AI增强功能
-- 如果API不可用，系统会自动降级到本地生成的回复
+- AI教练功能使用本地生成的回复
 - 用户身体信息仅用于提供更好的建议，不会被存储或传输到第三方
