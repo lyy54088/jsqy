@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MessageCircle, Trophy, Target, AlertCircle, CreditCard, Camera, Calendar, Users, Settings, Dumbbell } from 'lucide-react';
+import { MessageCircle, Trophy, Target, AlertCircle, CreditCard, Camera, Calendar, Users, Settings, Dumbbell, Download } from 'lucide-react';
 import { useUser, useCurrentContract, useTodayCheckIns, useAppStore, useAICoach } from '@/store';
 import { DataCleaner } from '@/utils/data-cleaner';
 import { DevTools } from '@/utils/dev-tools';
@@ -95,6 +95,13 @@ const Dashboard: React.FC = () => {
               <p className="text-sm text-gray-600">{todayStr}</p>
             </div>
             <div className="flex items-center gap-3">
+              <button 
+                onClick={() => navigate('/install')}
+                className="p-2 bg-green-100 rounded-full hover:bg-green-200 transition-colors"
+                title="安装应用到手机"
+              >
+                <Download className="w-5 h-5 text-green-600" />
+              </button>
               <button 
                 onClick={() => navigate('/ai-coach')}
                 className="p-2 bg-blue-100 rounded-full"

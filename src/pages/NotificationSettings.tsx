@@ -85,6 +85,7 @@ const NotificationSettings: React.FC = () => {
           contract_expiry: settings.types.contractExpiry,
           contract_completed: settings.types.contractExpiry,
           contract_expired: settings.types.contractExpiry,
+          contract_violation: settings.types.contractExpiry,
           daily_complete: settings.types.checkInReminder,
           ai_coach_message: settings.types.aiCoachMessage,
           daily_motivation: settings.types.dailyMotivation,

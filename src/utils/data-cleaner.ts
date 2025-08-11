@@ -2,6 +2,25 @@
  * 数据清理工具 - 专门处理无效的契约数据
  */
 
+interface AppState {
+  user?: {
+    id: string;
+    [key: string]: unknown;
+  };
+  currentContract?: {
+    userId?: string;
+    amount?: number;
+    remainingAmount?: number;
+    [key: string]: unknown;
+  };
+  [key: string]: unknown;
+}
+
+interface StorageData {
+  state: AppState;
+  [key: string]: unknown;
+}
+
 export class DataCleaner {
   private static readonly STORAGE_KEY = 'fitness-contract-storage';
   
@@ -15,7 +34,7 @@ export class DataCleaner {
         return false;
       }
 
-      const data = JSON.parse(storageData);
+      const data = JSON.parse(storageData) as StorageData;
       const state = data.state;
       
       // 检查各种无效状态
@@ -38,7 +57,7 @@ export class DataCleaner {
   /**
    * 检测数据问题
    */
-  private static detectIssues(state: unknown): string[] {
+  private static detectIssues(state: AppState): string[] {
     const issues: string[] = [];
     
     // 1. 没有用户但有契约

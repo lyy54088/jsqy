@@ -5,6 +5,7 @@ export interface Exercise {
   reps: string;
   description?: string;
   tips?: string[];
+  restTime?: string;
 }
 
 export interface WorkoutDay {

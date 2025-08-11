@@ -16,6 +16,7 @@ import Community from "@/pages/Community";
 import NotificationSettings from "@/pages/NotificationSettings";
 import WorkoutPlan from "@/pages/WorkoutPlan";
 import WorkoutTutorial from "@/pages/WorkoutTutorial";
+import InstallGuide from "@/pages/InstallGuide";
 
 
 import PWAInstaller from './components/PWAInstaller';
@@ -238,9 +239,8 @@ export default function App() {
           </ProtectedRoute>
         } />
         
-
-        
-
+        {/* 公开的安装指导页面 */}
+        <Route path="/install" element={<InstallGuide />} />
         
         {/* 默认路由重定向 */}
         <Route path="/" element={<Navigate to="/auth" replace />} />

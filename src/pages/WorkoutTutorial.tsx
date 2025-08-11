@@ -236,7 +236,6 @@ const WorkoutTutorial: React.FC = () => {
               <div className="text-sm text-gray-600">
                 <span className="font-medium">训练类型:</span> {
                   currentWorkout.type === 'workout' ? '力量训练' :
-                  currentWorkout.type === 'cardio' ? '有氧训练' :
                   currentWorkout.type === 'active_recovery' ? '主动恢复' : '完全休息'
                 }
               </div>

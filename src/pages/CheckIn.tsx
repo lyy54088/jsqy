@@ -22,8 +22,8 @@ const CheckIn: React.FC = () => {
   const getTodayAvailableCheckInTypes = () => {
     const today = new Date();
     const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
-    const todayKey = dayNames[today.getDay()] as keyof typeof defaultWeeklyPlan.days;
-    const todayWorkout = defaultWeeklyPlan.days[todayKey];
+    const todayKey = dayNames[today.getDay()];
+    const todayWorkout = defaultWeeklyPlan.days.find(day => day.id === todayKey);
 
     const allTypes = [
       { type: 'gym' as const, icon: '💪', label: '健身', description: '运动锻炼场景' },
