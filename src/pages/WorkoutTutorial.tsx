@@ -1,14 +1,101 @@
 import React, { useState } from 'react';
-import { ArrowLeft, Play, Clock, Target, Users, ChevronDown, ChevronUp } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { defaultWeeklyPlan, Exercise } from '@/data/workoutPlans';
+import { ArrowLeft, Play, Clock, Target, AlertCircle, CheckCircle, ChevronDown, ChevronUp } from 'lucide-react';
+import { defaultWeeklyPlan, weekendWeeklyPlan, Exercise } from '../data/workoutPlans';
+import { useCurrentContract } from '@/store';
+
+// 训练动作视频映射
+const exerciseVideos: Record<string, { title: string; url: string }> = {
+  '杠铃深蹲': {
+    title: '杠铃深蹲详细教学，教你如何做一个正确的深蹲，深蹲的正确姿势，深蹲的正确做法，如果你不知道深蹲怎么做，那么请认真看完这个视频。',
+    url: 'https://www.bilibili.com/video/BV1VG4y157S3/?share_source=copy_web&vd_source=87eb31e4d5c43acdfaec8e9760084699'
+  },
+  '杠铃卧推': {
+    title: '练胸教程：杠铃卧推的动作模式、常见错误、发力技巧',
+    url: 'https://www.bilibili.com/video/BV16i421h71B/?share_source=copy_web&vd_source=87eb31e4d5c43acdfaec8e9760084699'
+  },
+  '上斜杠铃卧推': {
+    title: '上斜杠铃卧推教学视频',
+    url: 'https://www.bilibili.com/video/BV1Nt421Q7Qs/?share_source=copy_web&vd_source=87eb31e4d5c43acdfaec8e9760084699'
+  },
+  '坐姿肩推': {
+    title: '坐姿肩推教学视频',
+    url: 'https://www.bilibili.com/video/BV1Nt421Q7Qs/?share_source=copy_web&vd_source=87eb31e4d5c43acdfaec8e9760084699'
+  },
+  '侧平举': {
+    title: '侧平举教学视频',
+    url: 'https://www.bilibili.com/video/BV1Nt421Q7Qs/?share_source=copy_web&vd_source=87eb31e4d5c43acdfaec8e9760084699'
+  },
+  '绳索下压（三头肌）': {
+    title: '绳索下压教学视频',
+    url: 'https://www.bilibili.com/video/BV1Nt421Q7Qs/?share_source=copy_web&vd_source=87eb31e4d5c43acdfaec8e9760084699'
+  },
+  '绳索下压': {
+    title: '绳索下压教学视频',
+    url: 'https://www.bilibili.com/video/BV1Nt421Q7Qs/?share_source=copy_web&vd_source=87eb31e4d5c43acdfaec8e9760084699'
+  },
+  '腿举': {
+    title: '腿举教学视频',
+    url: 'https://www.bilibili.com/video/BV1Nt421Q7Qs/?share_source=copy_web&vd_source=87eb31e4d5c43acdfaec8e9760084699'
+  },
+  '箭步蹲': {
+    title: '箭步蹲教学视频',
+    url: 'https://www.bilibili.com/video/BV1Nt421Q7Qs/?share_source=copy_web&vd_source=87eb31e4d5c43acdfaec8e9760084699'
+  },
+  '杠铃划船': {
+    title: '杠铃划船教学视频',
+    url: 'https://www.bilibili.com/video/BV1Nt421Q7Qs/?share_source=copy_web&vd_source=87eb31e4d5c43acdfaec8e9760084699'
+  },
+  '坐姿划船': {
+    title: '坐姿划船教学视频',
+    url: 'https://www.bilibili.com/video/BV1Nt421Q7Qs/?share_source=copy_web&vd_source=87eb31e4d5c43acdfaec8e9760084699'
+  },
+  '杠铃弯举': {
+    title: '杠铃弯举教学视频',
+    url: 'https://www.bilibili.com/video/BV1Nt421Q7Qs/?share_source=copy_web&vd_source=87eb31e4d5c43acdfaec8e9760084699'
+  },
+  '高位下拉': {
+    title: '练背动作教学｜倒三角必练｜高位下拉 (保姆级教程)',
+    url: 'https://www.bilibili.com/video/BV1oa4y1z73J/?share_source=copy_web&vd_source=87eb31e4d5c43acdfaec8e9760084699'
+  },
+  '硬拉': {
+    title: '如何学会做一个标准硬拉！',
+    url: 'https://www.bilibili.com/video/BV1ku411T7N5/?share_source=copy_web&vd_source=87eb31e4d5c43acdfaec8e9760084699'
+  },
+  '平板支撑': {
+    title: '不要这么做平板支撑（要避免的10个常见错误）',
+    url: 'https://www.bilibili.com/video/BV1V24y1E7qW/?share_source=copy_web&vd_source=87eb31e4d5c43acdfaec8e9760084699'
+  },
+  '绳索下拉': {
+    title: '练三头，有门道！绳索下拉做的好，三头一定会很好！一个绳索下拉就可以练我们"整个三头"，视频有点长，一定要耐心看完#干货分享#手臂训练#健身干货',
+    url: 'https://www.bilibili.com/video/BV1Cz421z7FV/?share_source=copy_web&vd_source=87eb31e4d5c43acdfaec8e9760084699'
+  },
+  'HIIT循环训练': {
+    title: '12分钟HIIT高效燃脂训练，12个动作，每个做40秒，休息20秒，每天循环3组',
+    url: 'https://www.bilibili.com/video/BV1Cz421z7FV/?share_source=copy_web&vd_source=87eb31e4d5c43acdfaec8e9760084699'
+  }
+};
 
 const WorkoutTutorial: React.FC = () => {
   const navigate = useNavigate();
+  const currentContract = useCurrentContract();
   const [selectedDay, setSelectedDay] = useState<string>('monday');
   const [expandedExercise, setExpandedExercise] = useState<string | null>(null);
 
-  const dayNames = {
+  // 根据用户保存的计划类型选择训练计划
+  const isWeekendPlan = currentContract?.workoutPlan?.planType === 'weekend';
+  const selectedPlan = isWeekendPlan ? weekendWeeklyPlan : defaultWeeklyPlan;
+
+  // 训练日程映射 - 根据计划类型动态设置
+  const dayNames = isWeekendPlan ? {
+    monday: '周一：全身拉伸恢复',
+    tuesday: '周二：休息日',
+    wednesday: '周三：休息日', 
+    thursday: '周四：上肢放松+肩颈护理',
+    friday: '周五：腿部预热',
+    saturday: '周六：上肢为主，兼顾核心',
+    sunday: '周日：下肢为主，强化整体'
+  } : {
     monday: '周一 - 上肢推力',
     tuesday: '周二 - 下肢训练',
     wednesday: '周三 - 主动恢复',
@@ -18,7 +105,7 @@ const WorkoutTutorial: React.FC = () => {
     sunday: '周日 - 完全休息'
   };
 
-  const currentWorkout = defaultWeeklyPlan.days.find(day => day.id === selectedDay);
+  const currentWorkout = selectedPlan.days.find(day => day.id === selectedDay);
 
   const exerciseDetails: Record<string, {
     description: string;
@@ -139,10 +226,22 @@ const WorkoutTutorial: React.FC = () => {
             </div>
 
             {/* 视频播放区域 */}
-            <div className="bg-gray-100 rounded-lg p-8 text-center">
+            <div 
+              className="bg-gray-100 rounded-lg p-8 text-center cursor-pointer hover:bg-gray-200 transition-colors"
+              onClick={() => {
+                const video = exerciseVideos[exercise.name];
+                if (video) {
+                  window.open(video.url, '_blank');
+                }
+              }}
+            >
               <Play className="w-12 h-12 text-gray-400 mx-auto mb-2" />
-              <p className="text-gray-500 text-sm">动作演示视频</p>
-              <p className="text-xs text-gray-400 mt-1">点击播放标准动作演示</p>
+              <p className="text-gray-500 text-sm font-medium">
+                {exerciseVideos[exercise.name]?.title || '动作演示视频'}
+              </p>
+              <p className="text-xs text-gray-400 mt-1">
+                {exerciseVideos[exercise.name] ? '点击观看B站教学视频' : '点击播放标准动作演示'}
+              </p>
             </div>
 
             {/* 技巧要点 */}
@@ -235,8 +334,7 @@ const WorkoutTutorial: React.FC = () => {
               
               <div className="text-sm text-gray-600">
                 <span className="font-medium">训练类型:</span> {
-                  currentWorkout.type === 'workout' ? '力量训练' :
-                  currentWorkout.type === 'active_recovery' ? '主动恢复' : '完全休息'
+                  currentWorkout.type === 'workout' ? '力量训练' : '完全休息'
                 }
               </div>
             </div>
@@ -252,12 +350,12 @@ const WorkoutTutorial: React.FC = () => {
             
             {/* 热身 */}
             {currentWorkout.warmup && (
-              <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
-                <h4 className="font-medium text-orange-900 mb-2 flex items-center gap-2">
-                  <span className="w-2 h-2 bg-orange-500 rounded-full"></span>
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <h4 className="font-medium text-blue-900 mb-2 flex items-center gap-2">
+                  <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
                   热身阶段 ({currentWorkout.warmup.duration}分钟)
                 </h4>
-                <div className="text-orange-800 text-sm space-y-1">
+                <div className="text-blue-800 text-sm space-y-1">
                   {currentWorkout.warmup.activities.map((activity, index) => (
                     <p key={index}>• {activity}</p>
                   ))}
@@ -286,19 +384,6 @@ const WorkoutTutorial: React.FC = () => {
                 </div>
               </div>
             )}
-          </div>
-        ) : currentWorkout?.type === 'active_recovery' ? (
-          <div className="bg-green-50 border border-green-200 rounded-lg p-6 text-center">
-            <Users className="w-12 h-12 text-green-600 mx-auto mb-3" />
-            <h3 className="font-medium text-green-900 mb-2">主动恢复日</h3>
-            <p className="text-green-800 text-sm mb-4">
-              选择低强度活动：30-60分钟散步、瑜伽、泡沫轴放松或游泳，促进血液循环，缓解肌肉酸痛。
-            </p>
-            <div className="text-xs text-green-700 space-y-1">
-              <p>• 散步或慢跑 20-30分钟</p>
-              <p>• 瑜伽或拉伸 15-20分钟</p>
-              <p>• 泡沫轴放松 10-15分钟</p>
-            </div>
           </div>
         ) : (
           <div className="bg-gray-50 border border-gray-200 rounded-lg p-6 text-center">

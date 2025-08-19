@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MessageCircle, Trophy, Target, AlertCircle, CreditCard, Camera, Calendar, Users, Settings, Dumbbell, Download } from 'lucide-react';
+import { MessageCircle, Trophy, Target, AlertCircle, CreditCard, Camera, Calendar, Users, Settings, Dumbbell, Download, Moon, Sun } from 'lucide-react';
+import UIverseButton from '../components/UIverseButton';
 import { useUser, useCurrentContract, useTodayCheckIns, useAppStore, useAICoach } from '@/store';
 import { DataCleaner } from '@/utils/data-cleaner';
 import { DevTools } from '@/utils/dev-tools';
@@ -14,6 +15,7 @@ const Dashboard: React.FC = () => {
   const aiCoach = useAICoach();
   const { resetAllData } = useAppStore();
   const [coachName, setCoachName] = useState('小美教练');
+  const [isDarkMode, setIsDarkMode] = useState(false);
 
   // 检查是否有无效的契约数据（没有用户但有契约）
   useEffect(() => {
@@ -96,11 +98,29 @@ const Dashboard: React.FC = () => {
             </div>
             <div className="flex items-center gap-3">
               <button 
-                onClick={() => navigate('/install')}
+                onClick={() => window.open('/install.html', '_blank')}
                 className="p-2 bg-green-100 rounded-full hover:bg-green-200 transition-colors"
                 title="安装应用到手机"
               >
                 <Download className="w-5 h-5 text-green-600" />
+              </button>
+              <button 
+                onClick={() => {
+                  setIsDarkMode(!isDarkMode);
+                  document.documentElement.classList.toggle('dark', !isDarkMode);
+                }}
+                className={`p-2 rounded-full transition-colors ${
+                  isDarkMode 
+                    ? 'bg-yellow-100 hover:bg-yellow-200' 
+                    : 'bg-gray-100 hover:bg-gray-200'
+                }`}
+                title={isDarkMode ? '切换到浅色模式' : '切换到深色模式'}
+              >
+                {isDarkMode ? (
+                  <Sun className="w-5 h-5 text-yellow-600" />
+                ) : (
+                  <Moon className="w-5 h-5 text-gray-600" />
+                )}
               </button>
               <button 
                 onClick={() => navigate('/ai-coach')}
@@ -217,10 +237,38 @@ const Dashboard: React.FC = () => {
         ) : (
           <div className="bg-white rounded-2xl p-6 border border-gray-200">
             <div className="text-center">
-              <Target className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+              <div 
+                className="relative flex items-center justify-center mx-auto mb-4"
+                style={{
+                  width: '180px',
+                  height: '180px',
+                  fontFamily: '"Inter", sans-serif',
+                  fontSize: '1.2em',
+                  fontWeight: 300,
+                  color: 'white',
+                  borderRadius: '50%',
+                  backgroundColor: 'transparent',
+                  userSelect: 'none'
+                }}
+              >
+                <div 
+                  className="absolute top-0 left-0 w-full h-full rounded-full loader-rotate"
+                  style={{
+                    backgroundColor: 'transparent',
+                    zIndex: 0
+                  }}
+                />
+                <Target 
+                  className="w-12 h-12 text-white relative z-10" 
+                  style={{
+                    filter: 'drop-shadow(0 0 10px rgba(255,255,255,0.5))'
+                  }}
+                />
+              </div>
               <h3 className="text-lg font-semibold text-gray-900 mb-2">开始你的健身契约</h3>
               <p className="text-gray-600 mb-4">用契约的力量，让坚持变得更容易</p>
-              <button 
+              <UIverseButton 
+                variant="primary"
                 onClick={(e) => {
                   console.log('🔥 创建契约按钮被点击');
                   console.log('🔥 事件对象:', e);
@@ -251,10 +299,9 @@ const Dashboard: React.FC = () => {
                     alert(`导航失败: ${error.message}`);
                   }
                 }}
-                className="bg-blue-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors"
               >
                 创建契约
-              </button>
+              </UIverseButton>
             </div>
           </div>
         )}
@@ -374,35 +421,43 @@ const Dashboard: React.FC = () => {
           {/* 操作按钮 */}
           <div className="space-y-2">
             {requiredCheckIns > 0 && (
-              <button 
-                onClick={() => {
-                  console.log('🔥 立即打卡按钮被点击');
-                  console.log('🔥 用户状态:', user);
-                  
-                  if (!user) {
-                    console.error('❌ 用户未登录，无法打卡');
-                    alert('请先登录后再进行打卡');
-                    return;
-                  }
-                  
-                  navigate('/checkin');
-                }}
-                className="w-full bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
-              >
-                <Camera className="w-5 h-5" />
-                立即打卡
-              </button>
+              <div className="w-full flex justify-center">
+                <UIverseButton 
+                  variant="primary"
+                  onClick={() => {
+                    console.log('🔥 立即打卡按钮被点击');
+                    console.log('🔥 用户状态:', user);
+                    
+                    if (!user) {
+                      console.error('❌ 用户未登录，无法打卡');
+                      alert('请先登录后再进行打卡');
+                      return;
+                    }
+                    
+                    navigate('/checkin');
+                  }}
+                >
+                  <div className="flex items-center gap-2">
+                    <Camera className="w-4 h-4" />
+                    立即打卡
+                  </div>
+                </UIverseButton>
+              </div>
             )}
             
             {/* 查看训练教程按钮 */}
             {todayWorkout?.type === 'workout' && (
-              <button 
-                onClick={() => navigate('/workout-tutorial')}
-                className="w-full bg-gray-100 text-gray-700 py-3 rounded-lg font-medium hover:bg-gray-200 transition-colors flex items-center justify-center gap-2"
-              >
-                <Dumbbell className="w-5 h-5" />
-                查看训练教程
-              </button>
+              <div className="w-full flex justify-center">
+                <UIverseButton 
+                  variant="secondary"
+                  onClick={() => navigate('/workout-tutorial')}
+                >
+                  <div className="flex items-center gap-2">
+                    <Dumbbell className="w-4 h-4" />
+                    查看训练教程
+                  </div>
+                </UIverseButton>
+              </div>
             )}
           </div>
         </div>
@@ -497,8 +552,6 @@ const Dashboard: React.FC = () => {
             <p className="text-xs text-gray-600">设置与统计</p>
           </button>
         </div>
-
-
       </div>
     </div>
   );

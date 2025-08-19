@@ -59,6 +59,7 @@ const ContractCreate: React.FC = () => {
       violationDays: 0,
       remainingAmount: 0, // 支付前保证金为0
       paymentStatus: 'pending',
+      fitnessMode: 'standard', // 添加健身模式字段
       // 新的违约金机制字段
       violationPenalty: Math.floor(amount / 3), // 每次违约扣除金额（保证金的1/3）
       accumulatedPenalty: 0, // 累计扣除的违约金
@@ -183,20 +184,22 @@ const ContractCreate: React.FC = () => {
         <div className="bg-white rounded-xl p-4 border border-gray-200">
           <h3 className="font-semibold text-gray-900 mb-4">契约时长</h3>
           
-          <div className="grid grid-cols-3 gap-3">
+          <div className="radio-inputs">
             {['21', '30', '60'].map((days) => (
-              <button
-                key={days}
-                onClick={() => setDuration(days)}
-                className={`p-3 rounded-lg border-2 transition-colors ${
-                  duration === days
-                    ? 'border-blue-500 bg-blue-50 text-blue-700'
-                    : 'border-gray-200 hover:border-gray-300'
-                }`}
-              >
-                <Calendar className="w-5 h-5 mx-auto mb-1" />
-                <div className="text-sm font-medium">{days}天</div>
-              </button>
+              <label key={days} className="radio-tile">
+                <input
+                  type="radio"
+                  name="duration"
+                  value={days}
+                  checked={duration === days}
+                  onChange={() => setDuration(days)}
+                  className="radio-input"
+                />
+                <div className="radio-icon">
+                  <Calendar className="w-5 h-5" />
+                </div>
+                <div className="radio-label">{days}天</div>
+              </label>
             ))}
           </div>
         </div>
@@ -223,7 +226,7 @@ const ContractCreate: React.FC = () => {
             
             <div className="flex justify-between">
               <span>每日任务：</span>
-              <span className="font-medium">5次打卡</span>
+              <span className="font-medium">2次打卡</span>
             </div>
           </div>
           

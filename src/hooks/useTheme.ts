@@ -8,7 +8,8 @@ export function useTheme() {
     if (savedTheme) {
       return savedTheme;
     }
-    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    // 默认使用深色模式
+    return 'dark';
   });
 
   useEffect(() => {
@@ -26,4 +27,4 @@ export function useTheme() {
     toggleTheme,
     isDark: theme === 'dark'
   };
-} 
+}

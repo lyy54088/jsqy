@@ -121,6 +121,7 @@ export async function analyzeImageWithTongyi(imageUrl: string, prompt: string): 
   }
 
   try {
+    console.log('🚀 发送请求到通义千问API...');
     const response = await axios.post<VisionApiResponse>(
       API_URL,
       {
@@ -153,20 +154,34 @@ export async function analyzeImageWithTongyi(imageUrl: string, prompt: string): 
       }
     );
 
+    console.log('✅ 通义千问API响应状态:', response.status);
+    console.log('📄 API响应数据:', JSON.stringify(response.data, null, 2));
+
     if (response.data.output?.choices && response.data.output.choices.length > 0 && response.data.output.choices[0]?.message?.content) {
-      return response.data.output.choices[0].message.content;
+      const content = response.data.output.choices[0].message.content;
+      console.log('🎯 提取到的内容:', content);
+      return content;
     } else {
+      console.error('❌ API响应格式异常:', response.data);
       throw new Error('API response did not contain expected data.');
     }
   } catch (error) {
     if (axios.isAxiosError(error)) {
-      console.error('Error calling Tongyi Vision API:', error.response?.data);
+      console.error('❌ 通义千问API调用失败:');
+      console.error('状态码:', error.response?.status);
+      console.error('响应头:', error.response?.headers);
+      console.error('响应数据:', error.response?.data);
+      
       // 提供更详细的错误信息
       if (error.response?.data?.message) {
         throw new Error(`Tongyi API Error: ${error.response.data.message}`);
+      } else if (error.response?.data?.error) {
+        throw new Error(`Tongyi API Error: ${error.response.data.error}`);
+      } else {
+        throw new Error(`Tongyi API Error: HTTP ${error.response?.status}`);
       }
     } else {
-      console.error('Error calling Tongyi Vision API:', error);
+      console.error('❌ 网络或其他错误:', error);
     }
     throw new Error('Failed to analyze image with Tongyi Vision API.');
   }

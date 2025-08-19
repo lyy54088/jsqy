@@ -84,6 +84,21 @@ router.post('/analyze', async (req: Request, res: Response) => {
     if (error instanceof Error) {
       const errorMsg = error.message;
       
+      // 检查是否是通义千问API的具体错误
+      if (errorMsg.includes('height:1 or width:1 must be larger than 10')) {
+        errorMessage = 'AI识别失败：图片尺寸过小，请上传尺寸大于100x100像素的图片';
+        statusCode = 400;
+      } else if (errorMsg.includes('InvalidParameter')) {
+        errorMessage = 'AI识别失败：图片格式或参数不符合要求，请重新上传';
+        statusCode = 400;
+      } else if (errorMsg.includes('Tongyi API Error')) {
+        errorMessage = `AI识别失败：${errorMsg.replace('Tongyi API Error: ', '')}`;
+        statusCode = 400;
+      } else if (errorMsg.includes('API')) {
+        errorMessage = 'AI识别失败：服务暂时不可用，请稍后重试';
+        statusCode = 503;
+      }
+      
       // 检查是否是图片尺寸问题
       if (errorMsg.includes('image length and width') || errorMsg.includes('must be larger than 10')) {
         errorMessage = '图片尺寸不符合要求，请确保图片的宽度和高度都大于10像素';

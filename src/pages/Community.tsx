@@ -706,7 +706,7 @@ const Community: React.FC = () => {
           <input
             type="text"
             placeholder="搜索社群..."
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full pl-10 pr-4 py-2 border-2 border-transparent bg-[#F3F3F3] rounded-lg outline-none overflow-hidden transition-all duration-500 hover:border-[#4A9DEC] hover:shadow-[0px_0px_0px_7px_rgba(74,157,236,0.2)] hover:bg-white focus:border-[#4A9DEC] focus:shadow-[0px_0px_0px_7px_rgba(74,157,236,0.2)] focus:bg-white"
           />
         </div>
       </div>

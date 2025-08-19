@@ -38,9 +38,6 @@ const CheckIn: React.FC = () => {
     if (todayWorkout.type === 'workout') {
       // 训练日，需要健身和蛋白质打卡
       return allTypes;
-    } else if (todayWorkout.type === 'active_recovery') {
-      // 主动恢复日，只需要蛋白质打卡
-      return allTypes.filter(type => type.type === 'protein');
     } else {
       // 完全休息日，不需要打卡
       return [];

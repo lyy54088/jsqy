@@ -6,6 +6,7 @@ import compression from 'compression';
 import dotenv from 'dotenv';
 import visionRoutes from './routes/vision';
 import communityRoutes from './routes/community';
+import chatRoutes from './routes/chat';
 
 // 加载环境变量
 dotenv.config();
@@ -52,6 +53,9 @@ app.use('/api/vision', visionRoutes);
 
 // Community API路由
 app.use('/api/communities', communityRoutes);
+
+// Chat API路由
+app.use('/api/chat', chatRoutes);
 
 // 404 处理
 app.use('*', (req, res) => {

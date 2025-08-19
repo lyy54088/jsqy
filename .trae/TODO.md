@@ -1,8 +1,8 @@
 # TODO:
 
-- [x] check-deploy-config: 检查当前GitHub Actions部署配置文件 (priority: High)
-- [x] analyze-deploy-issues: 分析部署失败的可能原因 (priority: High)
-- [x] check-build-scripts: 检查package.json中的构建脚本 (priority: Medium)
-- [x] verify-pages-settings: 验证GitHub Pages设置要求 (priority: Medium)
-- [x] test-local-build: 测试本地构建流程 (priority: Medium)
-- [x] update-deploy-config: 更新部署配置（如需要） (priority: Low)
+- [x] create-tongyi-chat-service: 在backend_service/src/services/目录下创建tongyiChatService.ts文件 (priority: High)
+- [x] create-chat-route: 在backend_service/src/routes/目录下创建chat.ts路由文件 (priority: High)
+- [x] update-aicoach-component: 修改AICoach.tsx组件，替换预设回复为真正的AI API调用 (priority: High)
+- [x] update-app-routes: 在app.ts中注册新的chat路由 (priority: Medium)
+- [x] create-frontend-chat-service: 在src/lib/目录下创建ai-chat-service.ts前端服务文件 (priority: Medium)
+- [x] test-chat-functionality: 测试新的AI聊天功能 (priority: Medium)

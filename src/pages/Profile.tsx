@@ -220,13 +220,15 @@ const Profile: React.FC = () => {
             
             <div className="flex-1">
               {isEditing ? (
-                <input
-                  type="text"
-                  value={editForm.nickname}
-                  onChange={(e) => setEditForm(prev => ({ ...prev, nickname: e.target.value }))}
-                  className="text-xl font-bold text-gray-900 bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 w-full"
-                  placeholder="昵称"
-                />
+                <div className="inp-border a1">
+                  <input
+                    type="text"
+                    value={editForm.nickname}
+                    onChange={(e) => setEditForm(prev => ({ ...prev, nickname: e.target.value }))}
+                    className="input"
+                    placeholder="昵称"
+                  />
+                </div>
               ) : (
                 <h2 className="text-xl font-bold text-gray-900">{user.nickname}</h2>
               )}
@@ -243,14 +245,17 @@ const Profile: React.FC = () => {
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">年龄</label>
               {isEditing ? (
-                <input
-                  type="number"
-                  value={editForm.age}
-                  onChange={(e) => setEditForm(prev => ({ ...prev, age: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  min="16"
-                  max="80"
-                />
+                <div className="inp-border a1">
+                  <input
+                    type="number"
+                    value={editForm.age}
+                    onChange={(e) => setEditForm(prev => ({ ...prev, age: e.target.value }))}
+                    className="input"
+                    min="16"
+                    max="80"
+                    placeholder="年龄"
+                  />
+                </div>
               ) : (
                 <p className="text-lg font-semibold text-gray-900">{user.age} 岁</p>
               )}
@@ -259,14 +264,17 @@ const Profile: React.FC = () => {
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">身高</label>
               {isEditing ? (
-                <input
-                  type="number"
-                  value={editForm.height}
-                  onChange={(e) => setEditForm(prev => ({ ...prev, height: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  min="140"
-                  max="220"
-                />
+                <div className="inp-border a1">
+                  <input
+                    type="number"
+                    value={editForm.height}
+                    onChange={(e) => setEditForm(prev => ({ ...prev, height: e.target.value }))}
+                    className="input"
+                    min="140"
+                    max="220"
+                    placeholder="身高(cm)"
+                  />
+                </div>
               ) : (
                 <p className="text-lg font-semibold text-gray-900">{user.height} cm</p>
               )}
@@ -275,15 +283,18 @@ const Profile: React.FC = () => {
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">体重</label>
               {isEditing ? (
-                <input
-                  type="number"
-                  value={editForm.weight}
-                  onChange={(e) => setEditForm(prev => ({ ...prev, weight: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  min="30"
-                  max="200"
-                  step="0.1"
-                />
+                <div className="inp-border a1">
+                  <input
+                    type="number"
+                    value={editForm.weight}
+                    onChange={(e) => setEditForm(prev => ({ ...prev, weight: e.target.value }))}
+                    className="input"
+                    min="30"
+                    max="200"
+                    step="0.1"
+                    placeholder="体重(kg)"
+                  />
+                </div>
               ) : (
                 <p className="text-lg font-semibold text-gray-900">{user.weight} kg</p>
               )}
@@ -361,29 +372,45 @@ const Profile: React.FC = () => {
           )}
         </div>
 
-        {/* 统计数据 */}
+        {/* 四季主题成就展示 */}
         <div className="bg-white rounded-2xl p-6 border border-gray-200">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">我的成就</h3>
+          <h3 className="text-lg font-semibold text-gray-900 mb-4 text-center">我的成就</h3>
           
-          <div className="grid grid-cols-2 gap-4">
-            <div className="text-center p-4 bg-blue-50 rounded-xl">
-              <div className="text-2xl font-bold text-blue-600">{totalCheckIns}</div>
-              <div className="text-sm text-gray-600">总打卡次数</div>
-            </div>
-            
-            <div className="text-center p-4 bg-green-50 rounded-xl">
-              <div className="text-2xl font-bold text-green-600">{approvedCheckIns}</div>
-              <div className="text-sm text-gray-600">成功打卡</div>
-            </div>
-            
-            <div className="text-center p-4 bg-purple-50 rounded-xl">
-              <div className="text-2xl font-bold text-purple-600">{completedContracts}</div>
-              <div className="text-sm text-gray-600">完成契约</div>
-            </div>
-            
-            <div className="text-center p-4 bg-yellow-50 rounded-xl">
-              <div className="text-2xl font-bold text-yellow-600">{totalContractDays}</div>
-              <div className="text-sm text-gray-600">坚持天数</div>
+          <div className="flex justify-center">
+            <div className="radio-input">
+              <label className="label spring">
+                <input type="radio" name="achievement" value="spring" defaultChecked />
+                <div className="text spring">
+                  <div style={{fontSize: '16px', marginBottom: '4px'}}>{totalCheckIns}</div>
+                  <div style={{fontSize: '10px'}}>总打卡</div>
+                </div>
+              </label>
+              
+              <label className="label summer">
+                <input type="radio" name="achievement" value="summer" />
+                <div className="text summer">
+                  <div style={{fontSize: '16px', marginBottom: '4px'}}>{approvedCheckIns}</div>
+                  <div style={{fontSize: '10px'}}>成功打卡</div>
+                </div>
+              </label>
+              
+              <label className="label autumn">
+                <input type="radio" name="achievement" value="autumn" />
+                <div className="text autumn">
+                  <div style={{fontSize: '16px', marginBottom: '4px'}}>{completedContracts}</div>
+                  <div style={{fontSize: '10px'}}>完成契约</div>
+                </div>
+              </label>
+              
+              <label className="label winter">
+                <input type="radio" name="achievement" value="winter" />
+                <div className="text winter">
+                  <div style={{fontSize: '16px', marginBottom: '4px'}}>{totalContractDays}</div>
+                  <div style={{fontSize: '10px'}}>坚持天数</div>
+                </div>
+              </label>
+              
+              <div className="center"></div>
             </div>
           </div>
         </div>

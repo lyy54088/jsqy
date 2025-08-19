@@ -12,3 +12,538 @@
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
+
+/* Uiverse.io Loader Animation */
+@keyframes loaderRotate {
+  0% {
+    transform: rotate(90deg);
+    box-shadow: 
+      0 10px 20px 0 #fff inset,
+      0 20px 30px 0 #ad5fff inset,
+      0 60px 60px 0 #471eec inset;
+  }
+  50% {
+    transform: rotate(270deg);
+    box-shadow: 
+      0 10px 20px 0 #fff inset,
+      0 20px 10px 0 #d60a47 inset,
+      0 40px 60px 0 #311e80 inset;
+  }
+  100% {
+    transform: rotate(450deg);
+    box-shadow: 
+      0 10px 20px 0 #fff inset,
+      0 20px 30px 0 #ad5fff inset,
+      0 60px 60px 0 #471eec inset;
+  }
+}
+
+.loader-rotate {
+  animation: loaderRotate 2s linear infinite;
+}
+
+/* Dark Mode Styles */
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+  }
+}
+
+.dark {
+  color-scheme: dark;
+}
+
+/* Dark mode background and text colors */
+.dark body {
+  background-color: #0f172a;
+  color: #f1f5f9;
+}
+
+.dark .bg-gray-50 {
+  background-color: #0f172a !important;
+}
+
+.dark .bg-white {
+  background-color: #1e293b !important;
+}
+
+.dark .bg-gray-100 {
+  background-color: #334155 !important;
+}
+
+.dark .bg-gray-200 {
+  background-color: #475569 !important;
+}
+
+/* Dark mode text colors */
+.dark .text-gray-900 {
+  color: #f1f5f9 !important;
+}
+
+.dark .text-gray-800 {
+  color: #e2e8f0 !important;
+}
+
+.dark .text-gray-700 {
+  color: #cbd5e1 !important;
+}
+
+.dark .text-gray-600 {
+  color: #94a3b8 !important;
+}
+
+.dark .text-gray-500 {
+  color: #64748b !important;
+}
+
+/* Dark mode borders */
+.dark .border-gray-200 {
+  border-color: #374151 !important;
+}
+
+.dark .border-gray-300 {
+  border-color: #4b5563 !important;
+}
+
+/* Dark mode shadows */
+.dark .shadow-sm {
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.3) !important;
+}
+
+/* Dark mode hover states */
+.dark .hover\:bg-gray-100:hover {
+  background-color: #374151 !important;
+}
+
+.dark .hover\:bg-gray-200:hover {
+  background-color: #4b5563 !important;
+}
+
+.dark .hover\:border-gray-300:hover {
+  border-color: #6b7280 !important;
+}
+
+/* Dark mode specific background colors */
+.dark .bg-red-50 {
+  background-color: #7f1d1d !important;
+}
+
+.dark .bg-orange-50 {
+  background-color: #7c2d12 !important;
+}
+
+.dark .bg-green-50 {
+  background-color: #14532d !important;
+}
+
+.dark .bg-blue-50 {
+  background-color: #1e3a8a !important;
+}
+
+.dark .bg-purple-50 {
+  background-color: #581c87 !important;
+}
+
+/* Dark mode text colors for colored backgrounds */
+.dark .text-red-700 {
+  color: #fca5a5 !important;
+}
+
+.dark .text-orange-700 {
+  color: #fdba74 !important;
+}
+
+.dark .text-green-700 {
+  color: #86efac !important;
+}
+
+.dark .text-blue-700 {
+  color: #93c5fd !important;
+}
+
+.dark .text-purple-700 {
+  color: #c4b5fd !important;
+}
+
+/* Dark mode border colors for colored elements */
+.dark .border-red-200 {
+  border-color: #dc2626 !important;
+}
+
+.dark .border-orange-200 {
+  border-color: #ea580c !important;
+}
+
+.dark .border-green-200 {
+  border-color: #16a34a !important;
+}
+
+.dark .border-blue-200 {
+  border-color: #2563eb !important;
+}
+
+.dark .border-purple-200 {
+  border-color: #7c3aed !important;
+}
+
+/* Uiverse.io Four Seasons Radio Input Styles */
+.radio-input {
+  width: 210px;
+  height: 210px;
+  background-color: black;
+  border-radius: 30px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  padding: 6px;
+  gap: 4px;
+  position: relative;
+  z-index: 1;
+}
+
+/* Uiverse.io Colorful Input Styles */
+.inp-border {
+  padding: 5px;
+  margin: 2em 1em;
+  border-radius: 50px;
+  max-width: 300px;
+}
+
+.input {
+  text-align: center;
+  padding: 15px;
+  outline: none;
+  border: double 0;
+  background: #252525;
+  border-radius: 50px;
+  position: relative;
+  box-sizing: border-box;
+  display: block;
+  width: 100%;
+  font-size: 1.5rem;
+}
+
+.a1 {
+  background: linear-gradient(
+    330.28deg,
+    #ff6e1d 100%,
+    #ff6e1d 100%,
+    #ff6e1d 100%
+  );
+}
+
+.a1 > input {
+  color: #caab98;
+}
+
+.a1 > input::placeholder {
+  color: #ff6e1d;
+  opacity: 0.6;
+}
+
+.inp-border:focus-within {
+  background: linear-gradient(
+    330.28deg,
+    #2cfff2 0%,
+    #1e78ff 30.73%,
+    #ff54a6 55.73%,
+    #ff6e1d 79.17%,
+    #ff3e3e 100%
+  );
+}
+
+.inp-border:hover {
+  background: linear-gradient(
+    330.28deg,
+    #2cfff2 0%,
+    #1e78ff 30.73%,
+    #ff54a6 55.73%,
+    #ff6e1d 79.17%,
+    #ff3e3e 100%
+  );
+}
+
+.radio-input input {
+  display: none;
+}
+
+.radio-input .label {
+  background: linear-gradient(to bottom, #333333, rgb(36, 35, 35));
+  border-radius: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  border-top: 1px solid #4e4d4d;
+  cursor: pointer;
+  transition-property: all;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 200ms;
+  box-shadow: 0px 0px 5px 1px rgba(0, 0, 0, 0.2);
+}
+
+.label:has(input[type="radio"]:checked) {
+  box-shadow: 0px 17px 5px 1px rgba(0, 0, 0, 0);
+  background: linear-gradient(to bottom, #1d1d1d, #1d1d1d);
+  border-top: none;
+}
+
+.label::before {
+  content: "";
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  scale: 1.02;
+  border-radius: 25px;
+  background: linear-gradient(
+      to bottom,
+      transparent 10%,
+      transparent,
+      transparent 90%
+    ),
+    linear-gradient(to left, transparent 10%, transparent, transparent 90%);
+  transition-property: all;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 200ms;
+  z-index: -1;
+}
+
+.label.spring:has(input[type="radio"]:checked)::before {
+  background: linear-gradient(
+      to bottom,
+      transparent 10%,
+      #d88fa3,
+      transparent 90%
+    ),
+    linear-gradient(to left, transparent 10%, #d88fa3, transparent 90%);
+}
+
+.label.summer:has(input[type="radio"]:checked)::before {
+  background: linear-gradient(
+      to bottom,
+      transparent 10%,
+      #e6b800,
+      transparent 90%
+    ),
+    linear-gradient(to left, transparent 10%, #e6b800, transparent 90%);
+}
+
+.label.autumn:has(input[type="radio"]:checked)::before {
+  background: linear-gradient(
+      to bottom,
+      transparent 10%,
+      #c76b00,
+      transparent 90%
+    ),
+    linear-gradient(to left, transparent 10%, #c76b00, transparent 90%);
+}
+
+.label.winter:has(input[type="radio"]:checked)::before {
+  background: linear-gradient(
+      to bottom,
+      transparent 10%,
+      #7fa8c4,
+      transparent 90%
+    ),
+    linear-gradient(to left, transparent 10%, #7fa8c4, transparent 90%);
+}
+
+.label .text {
+  color: white;
+  font-size: 13px;
+  line-height: 12px;
+  padding: 0px;
+  font-weight: 700;
+  text-transform: uppercase;
+  transition: all 0.1s linear;
+  text-shadow:
+    -1px -1px 1px rgb(224, 224, 224, 0.1),
+    0px 2px 3px rgb(0, 0, 0, 0.3);
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.label input[type="radio"]:checked + .spring {
+  color: #ffc0cb;
+  text-shadow: 0px 0px 12px #d88fa3;
+}
+
+.label input[type="radio"]:checked + .summer {
+  color: #ffd700;
+  text-shadow: 0px 0px 12px #e6b800;
+}
+
+.label input[type="radio"]:checked + .autumn {
+  color: #ff8c00;
+  text-shadow: 0px 0px 12px #c76b00;
+}
+
+.label input[type="radio"]:checked + .winter {
+  color: #add8e6;
+  text-shadow: 0px 0px 12px #7fa8c4;
+}
+
+.center {
+  width: 12px;
+  height: 12px;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) rotate(45deg);
+  background-color: #333333;
+  border-radius: 2px;
+  border: 1px solid #4e4d4d;
+  transition: all 0.12s linear;
+}
+
+.radio-input:has(.spring input:checked) .center {
+  border-left: 1px solid #ffc0cbb2;
+  box-shadow: inset 11px 0px 10px -12px #ffc0cbdc;
+}
+
+.radio-input:has(.summer input:checked) .center {
+  border-top: 1px solid #ffd900d8;
+  box-shadow: inset 0px 11px 10px -12px #ffd700;
+}
+
+.radio-input:has(.autumn input:checked) .center {
+  border-bottom: 1px solid #ff8c00b2;
+  box-shadow: inset 0px -11px 10px -12px #ff8c00;
+}
+
+.radio-input:has(.winter input:checked) .center {
+  border-right: 1px solid #add8e694;
+  box-shadow: inset -11px 0px 10px -12px #add8e6;
+}
+
+/* Uiverse.io Contract Duration Radio Button Styles */
+.radio-inputs {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  max-width: 350px;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+.radio-inputs > * {
+  margin: 6px;
+}
+
+.radio-input:checked + .radio-tile {
+  border-color: #2260ff;
+  box-shadow: 0 5px 10px rgba(0, 0, 0, 0.1);
+  color: #2260ff;
+}
+
+.radio-input:checked + .radio-tile:before {
+  transform: scale(1);
+  opacity: 1;
+  background-color: #2260ff;
+  border-color: #2260ff;
+}
+
+.radio-input:checked + .radio-tile .radio-icon svg {
+  fill: #2260ff;
+}
+
+.radio-input:checked + .radio-tile .radio-label {
+  color: #2260ff;
+}
+
+.radio-input:focus + .radio-tile {
+  border-color: #2260ff;
+  box-shadow: 0 5px 10px rgba(0, 0, 0, 0.1), 0 0 0 4px #b5c9fc;
+}
+
+.radio-input:focus + .radio-tile:before {
+  transform: scale(1);
+  opacity: 1;
+}
+
+.radio-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 80px;
+  min-height: 80px;
+  border-radius: 0.5rem;
+  border: 2px solid #b5bfd9;
+  background-color: #fff;
+  box-shadow: 0 5px 10px rgba(0, 0, 0, 0.1);
+  transition: 0.15s ease;
+  cursor: pointer;
+  position: relative;
+}
+
+.radio-tile:before {
+  content: "";
+  position: absolute;
+  display: block;
+  width: 0.75rem;
+  height: 0.75rem;
+  border: 2px solid #b5bfd9;
+  background-color: #fff;
+  border-radius: 50%;
+  top: 0.25rem;
+  left: 0.25rem;
+  opacity: 0;
+  transform: scale(0);
+  transition: 0.25s ease;
+}
+
+.radio-tile:hover {
+  border-color: #2260ff;
+}
+
+.radio-tile:hover:before {
+  transform: scale(1);
+  opacity: 1;
+}
+
+.radio-icon svg {
+  width: 2rem;
+  height: 2rem;
+  fill: #494949;
+}
+
+.radio-label {
+  color: #707070;
+  transition: 0.375s ease;
+  text-align: center;
+  font-size: 13px;
+}
+
+.radio-input {
+  clip: rect(0 0 0 0);
+  -webkit-clip-path: inset(100%);
+  clip-path: inset(100%);
+  height: 1px;
+  overflow: hidden;
+  position: absolute;
+  white-space: nowrap;
+  width: 1px;
+}
+
+/* Dark mode styles for radio tiles */
+.dark .radio-tile {
+  background-color: #1e293b;
+  border-color: #475569;
+}
+
+.dark .radio-tile:before {
+  background-color: #1e293b;
+  border-color: #475569;
+}
+
+.dark .radio-label {
+  color: #94a3b8;
+}
+
+.dark .radio-icon svg {
+  fill: #94a3b8;
+}

@@ -2,6 +2,8 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Send, Mic, MicOff, Volume2, VolumeX, Settings, Sparkles } from 'lucide-react';
 import { useAICoach, useUser, useCurrentContract, useTodayCheckIns, useCurrentChatSession, useAppStore } from '@/store';
+import { chatWithAICoach, generateWelcomeMessage, type CoachType } from '@/lib/ai-chat-service';
+import AvatarUpload from '@/components/AvatarUpload';
 
 // Web Speech API 类型定义
 declare global {
@@ -25,6 +27,7 @@ const AICoach: React.FC = () => {
   const [isTyping, setIsTyping] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false); // 新增：语音播放状态
   const [currentSpeakingMessageId, setCurrentSpeakingMessageId] = useState<string | null>(null); // 当前播放的消息ID
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const isInitialized = useRef(false);
 
@@ -62,9 +65,10 @@ const AICoach: React.FC = () => {
     };
   }, []);
   
-  // 自定义教练信息
-  const [coachName, setCoachName] = useState('小美教练');
-  const [coachAvatar, setCoachAvatar] = useState('');
+  // 自定义教练信息 - 统一使用store中的aiCoach状态
+  const [coachName, setCoachName] = useState<string>(aiCoach?.name || '教练');
+  const [coachAvatar, setCoachAvatar] = useState<string>(aiCoach?.avatar || '');
+  const [showAvatarSettings, setShowAvatarSettings] = useState(false);
 
   // 从当前会话获取消息列表
   const messages = currentChatSession?.messages || [];
@@ -73,183 +77,47 @@ const AICoach: React.FC = () => {
   const getWelcomeMessage = useCallback(() => {
     if (!aiCoach || !user) return '';
     
-    const greetings = {
-      strict: [
-        `${user.nickname}，我是你的教练${coachName}！`,
-        '有什么健身问题尽管问我，我会严格督促你完成目标！'
-      ],
-      gentle: [
-        `你好${user.nickname}，我是${coachName}～`,
-        '有任何问题都可以和我聊聊，我会耐心帮助你的！'
-      ],
-      humorous: [
-        `嗨${user.nickname}！我是你的专属教练${coachName}！`,
-        '有什么想聊的吗？我可是很有趣的教练哦～'
-      ]
-    };
-    
-    return greetings[aiCoach.personality].join('\n\n');
+    // 使用新的AI聊天服务生成欢迎消息
+    const customIdentity = aiCoach.customIdentity?.role || coachName;
+    return generateWelcomeMessage(aiCoach.personality as CoachType, customIdentity);
   }, [aiCoach, user, coachName]);
 
   // 生成AI回复
-  const generateAIResponse = useCallback((userMessage: string): string => {
-    if (!aiCoach || !user) return '';
-    
-    const lowerMessage = userMessage.toLowerCase();
-    
-    // 使用自定义身份信息
-    const customIdentity = aiCoach.customIdentity;
-    const hasCustomIdentity = customIdentity && (customIdentity.role || customIdentity.description || customIdentity.speakingStyle);
-    
-    // 自我介绍相关问题
-    if (lowerMessage.includes('你是谁') || lowerMessage.includes('介绍') || lowerMessage.includes('你好') || lowerMessage === '谁') {
-      if (hasCustomIdentity) {
-        // 使用自定义身份信息
-        let introduction = `你好${user.nickname}！我是${coachName}`;
-        if (customIdentity.role) {
-          introduction += `，${customIdentity.role}`;
-        }
-        if (customIdentity.description) {
-          introduction += `。${customIdentity.description}`;
-        }
-        if (customIdentity.speakingStyle) {
-          introduction += ` ${customIdentity.speakingStyle}`;
-        }
-        if (customIdentity.traits && customIdentity.traits.length > 0) {
-          introduction += ` 我的特点是：${customIdentity.traits.join('、')}。`;
-        }
-        return introduction;
-      } else {
-        // 使用默认性格回复
-        const responses = {
-          strict: `我是${coachName}，你的专属健身教练！我会严格监督你的训练计划，确保你达成健身目标。不要想着偷懒，我会盯着你的每一个动作！`,
-          gentle: `你好${user.nickname}～我是${coachName}，你的贴心健身教练。我会温柔地陪伴你完成健身之旅，有任何问题都可以随时问我哦！`,
-          humorous: `哈喽！我是大名鼎鼎的${coachName}教练！专业拯救懒癌患者，让你从"葛优躺"变成"施瓦辛格"！准备好和我一起燃烧卡路里了吗？🔥`
-        };
-        return responses[aiCoach.personality];
-      }
-    }
-    
-    // 根据关键词生成回复
-    if (lowerMessage.includes('累') || lowerMessage.includes('疲劳')) {
-      const responses = {
-        strict: '累是正常的！但是不能因为累就放弃，休息5分钟后继续！记住，没有付出就没有收获！',
-        gentle: '感觉累了就适当休息一下吧～身体健康最重要，不要勉强自己哦。可以做一些轻松的拉伸运动。',
-        humorous: '累了？那说明你的肌肉在成长呢！它们在说"主人，我们在变强！"休息一下，然后继续战斗！💪'
-      };
-      return responses[aiCoach.personality];
-    }
-    
-    if (lowerMessage.includes('饮食') || lowerMessage.includes('吃')) {
-      const responses = {
-        strict: '饮食控制是成功的关键！严格按照计划执行，少油少盐，多蛋白质和蔬菜。不要给自己找借口！',
-        gentle: '饮食方面要注意营养均衡哦～可以多吃一些蛋白质丰富的食物，蔬菜水果也很重要。偶尔吃点喜欢的也没关系～',
-        humorous: '民以食为天！但是我们要做聪明的"吃货"～蛋白质是肌肉的好朋友，蔬菜是身体的清洁工！'
-      };
-      return responses[aiCoach.personality];
-    }
-    
-    if (lowerMessage.includes('坚持') || lowerMessage.includes('放弃')) {
-      const responses = {
-        strict: '坚持就是胜利！你已经付出了保证金，现在退缩就是浪费！想想你的目标，咬牙坚持下去！',
-        gentle: '坚持确实不容易，但是你已经做得很好了～每一天的努力都在让你变得更好。相信自己，你一定可以的！',
-        humorous: '放弃？不存在的！你的保证金还在我这里看着呢～开个玩笑，其实你比自己想象的要强大！'
-      };
-      return responses[aiCoach.personality];
-    }
-    
-    if (lowerMessage.includes('运动') || lowerMessage.includes('健身')) {
-      if (hasCustomIdentity && customIdentity.speakingStyle) {
-        // 使用自定义说话风格
-        let response = '关于运动健身，我建议你要有计划有强度地进行训练。';
-        if (customIdentity.speakingStyle.includes('温和') || customIdentity.speakingStyle.includes('耐心')) {
-          response = '运动是一个循序渐进的过程～根据自己的身体状况来调整强度，重要的是坚持下去。';
-        } else if (customIdentity.speakingStyle.includes('幽默') || customIdentity.speakingStyle.includes('有趣')) {
-          response = '运动就像谈恋爱，需要激情也需要坚持！让我们和健康的身体"谈一场不分手的恋爱"吧！';
-        } else if (customIdentity.speakingStyle.includes('专业') || customIdentity.speakingStyle.includes('简单')) {
-          response = '运动健身需要科学的方法和持续的坚持。建议制定合理的训练计划，循序渐进地提高强度。';
-        }
-        return response;
-      } else {
-        // 使用默认性格回复
-        const responses = {
-          strict: '运动要有计划有强度！不要偷懒，每个动作都要标准。记住，汗水不会骗人！',
-          gentle: '运动是一个循序渐进的过程～根据自己的身体状况来调整强度，重要的是坚持下去。',
-          humorous: '运动就像谈恋爱，需要激情也需要坚持！让我们和健康的身体"谈一场不分手的恋爱"吧！'
-        };
-        return responses[aiCoach.personality];
-      }
-    }
-    
-    // 时间相关问题
-    if (lowerMessage.includes('什么时候') || lowerMessage.includes('时间')) {
-      const responses = {
-        strict: '最佳运动时间是早上6-8点或下午4-6点！不要找借口，现在就是最好的时间！',
-        gentle: '其实任何时间都可以运动哦～选择你觉得最舒服的时间段，重要的是养成习惯。',
-        humorous: '什么时候运动最好？当然是"现在"啦！不过如果你非要问具体时间，我推荐早上或傍晚～'
-      };
-      return responses[aiCoach.personality];
-    }
-    
-    // 效果相关问题
-    if (lowerMessage.includes('效果') || lowerMessage.includes('多久') || lowerMessage.includes('见效')) {
-      const responses = {
-        strict: '想看到效果？至少坚持4-6周！没有捷径，只有汗水和坚持！停止幻想，开始行动！',
-        gentle: '一般来说，坚持运动2-4周就能感受到身体的变化，6-8周能看到明显效果。要有耐心哦～',
-        humorous: '想要马上看到效果？除非你有哆啦A梦的时光机！一般需要4-6周，但相信我，等待是值得的！'
-      };
-      return responses[aiCoach.personality];
-    }
-    
-    // 鼓励和支持
-    if (lowerMessage.includes('谢谢') || lowerMessage.includes('感谢')) {
-      const responses = {
-        strict: '不用谢！这是我的职责！继续保持这种积极态度，成功就在前方！',
-        gentle: '不客气呀～能帮到你我很开心！有什么需要随时找我哦～',
-        humorous: '哎呀，这么客气干嘛～我们是战友嘛！一起加油，向着马甲线进发！💪'
-      };
-      return responses[aiCoach.personality];
-    }
-    
-    // 默认回复
-    if (hasCustomIdentity && customIdentity.speakingStyle) {
-      // 使用自定义说话风格的默认回复
-      let response = '我理解你的想法，有什么具体的问题可以详细说说吗？';
-      if (customIdentity.speakingStyle.includes('温和') || customIdentity.speakingStyle.includes('耐心')) {
-        response = '嗯嗯，我理解你的想法～有什么具体的问题可以详细说说，我会耐心帮助你的。';
-      } else if (customIdentity.speakingStyle.includes('幽默') || customIdentity.speakingStyle.includes('有趣')) {
-        response = '哈哈，有趣！你知道吗，和你聊天让我觉得当教练真是太有意思了！';
-      } else if (customIdentity.speakingStyle.includes('专业') || customIdentity.speakingStyle.includes('简单')) {
-        response = '我明白了。如果你有具体的健身问题，我很乐意为你提供专业的建议。';
-      } else if (customIdentity.speakingStyle.includes('鼓励') || customIdentity.speakingStyle.includes('激励')) {
-        response = '说得对！保持这种积极的态度，坚持下去，成功就在前方！';
-      }
-      return response;
-    } else {
-      // 使用默认性格回复
-      const defaultResponses = {
-        strict: '说得对！保持这种积极的态度，严格执行计划，成功就在前方！',
-        gentle: '嗯嗯，我理解你的想法～有什么具体的问题可以详细说说，我会帮助你的。',
-        humorous: '哈哈，有趣！你知道吗，和你聊天让我觉得当教练真是太有意思了！'
-      };
-      
-      return defaultResponses[aiCoach.personality];
-    }
-  }, [aiCoach, user]);
 
-
-
-  // 加载自定义教练信息
+  // 同步store中的教练信息到本地状态
   useEffect(() => {
-    const savedCoachName = localStorage.getItem('coachName');
-    const savedCoachAvatar = localStorage.getItem('coachAvatar');
-    if (savedCoachName) {
-      setCoachName(savedCoachName);
+    if (aiCoach) {
+      setCoachName(aiCoach.name);
+      // 设置头像，曼波教练使用默认头像
+      let avatarUrl = aiCoach.avatar || '';
+      if (aiCoach.personality === 'mambo' && !avatarUrl) {
+        avatarUrl = '/mambo-coach-avatar.svg';
+      }
+      setCoachAvatar(avatarUrl);
+      console.log('同步教练信息:', { name: aiCoach.name, avatar: avatarUrl, personality: aiCoach.personality });
     }
-    if (savedCoachAvatar) {
-      setCoachAvatar(savedCoachAvatar);
+  }, [aiCoach]);
+
+  // 处理头像更改 - 同时更新store和localStorage
+  const handleAvatarChange = (newAvatar: string) => {
+    setCoachAvatar(newAvatar);
+    
+    // 更新store中的教练信息
+    if (aiCoach) {
+      const updatedCoach = { ...aiCoach, avatar: newAvatar };
+      useAppStore.getState().setAICoach(updatedCoach);
+      console.log('更新store中的教练头像:', newAvatar);
     }
-  }, []);
+    
+    // 同时更新localStorage中的教练信息以保持兼容性
+    const savedCoach = localStorage.getItem('selectedCoach');
+    if (savedCoach) {
+      const coach = JSON.parse(savedCoach);
+      coach.avatar = newAvatar;
+      localStorage.setItem('selectedCoach', JSON.stringify(coach));
+      console.log('更新localStorage中的教练头像:', newAvatar);
+    }
+  };
 
   // 初始化对话会话
   useEffect(() => {
@@ -297,28 +165,60 @@ const AICoach: React.FC = () => {
     });
     
     try {
-      // 使用本地生成的回复
-      const aiResponseContent = generateAIResponse(userMessageContent);
+      // 构建自定义系统提示词
+      let customSystemPrompt = '';
+      const customIdentity = aiCoach.customIdentity;
       
-      // 添加 AI 回复到全局状态
-      addChatMessage({
-        type: 'coach',
-        content: aiResponseContent,
-        timestamp: new Date(),
-        coachId: aiCoach.id
-      });
+      if (customIdentity && (customIdentity.role || customIdentity.description || customIdentity.speakingStyle)) {
+        customSystemPrompt = `你是${coachName}，一个专业的健身教练。`;
+        if (customIdentity.role) {
+          customSystemPrompt += `你的身份是：${customIdentity.role}。`;
+        }
+        if (customIdentity.description) {
+          customSystemPrompt += `${customIdentity.description}`;
+        }
+        if (customIdentity.speakingStyle) {
+          customSystemPrompt += `你的说话风格是：${customIdentity.speakingStyle}。`;
+        }
+        if (customIdentity.traits && customIdentity.traits.length > 0) {
+          customSystemPrompt += `你的特点包括：${customIdentity.traits.join('、')}。`;
+        }
+        customSystemPrompt += `请用这种风格回答用户关于健身的问题，并称呼用户为${user.nickname}。`;
+      }
       
-      // 移除自动播放语音功能 - 让用户手动控制
-      // if (aiCoach.config.voiceEnabled) {
-      //   setTimeout(() => {
-      //     handleSpeakMessage(aiResponseContent);
-      //   }, 500);
-      // }
+      // 调用真正的AI API
+      const aiResult = await chatWithAICoach(
+        userMessageContent,
+        aiCoach.personality as CoachType,
+        customSystemPrompt
+      );
+      
+      if (aiResult.success && aiResult.reply) {
+        // 添加 AI 回复到全局状态
+        addChatMessage({
+          type: 'coach',
+          content: aiResult.reply,
+          timestamp: new Date(),
+          coachId: aiCoach.id
+        });
+      } else {
+        throw new Error(aiResult.error || 'AI回复失败');
+      }
+      
     } catch (error) {
       console.error('获取AI回复失败:', error);
       
       // 错误时使用默认回复
-      const fallbackResponse = '抱歉，我现在无法回复，请稍后再试。';
+      let fallbackResponse = '抱歉，我现在无法回复，请稍后再试。';
+      
+      if (error instanceof Error) {
+        if (error.message.includes('网络')) {
+          fallbackResponse = '网络连接失败，请检查网络后重试。';
+        } else if (error.message.includes('API')) {
+          fallbackResponse = 'AI服务暂时不可用，请稍后重试。';
+        }
+      }
+      
       addChatMessage({
         type: 'coach',
         content: fallbackResponse,
@@ -508,36 +408,56 @@ const AICoach: React.FC = () => {
               </button>
               
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full overflow-hidden bg-gradient-to-br from-purple-400 to-pink-400 flex items-center justify-center text-white font-bold">
+                <div className="w-12 h-12 bg-gradient-to-br from-purple-400 to-pink-400 rounded-full flex items-center justify-center text-white font-bold text-lg overflow-hidden">
                   {coachAvatar ? (
                     <img 
                       src={coachAvatar} 
                       alt={coachName}
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-cover rounded-full"
+                      onError={(e) => {
+                        // 如果头像加载失败，显示首字母
+                        e.currentTarget.style.display = 'none';
+                        (e.currentTarget.nextElementSibling as HTMLElement)!.style.display = 'block';
+                      }}
                     />
-                  ) : (
-                    coachName.charAt(0)
-                  )}
+                  ) : null}
+                  <span className={coachAvatar ? 'hidden' : 'block'}>
+                    {coachName.charAt(0)}
+                  </span>
                 </div>
                 
                 <div>
                   <h1 className="text-lg font-bold text-gray-900">{coachName}</h1>
                   <p className="text-sm text-gray-600">
-                    {aiCoach.personality === 'strict' ? '严格型教练' : 
-                     aiCoach.personality === 'gentle' ? '温和型教练' : '幽默型教练'}
+                    {aiCoach.personality === 'queen' ? '霸道御姐' : 
+                     aiCoach.personality === 'loli' ? '温柔小萝莉' : '曼波教练'}
                   </p>
                 </div>
               </div>
             </div>
             
-            <button 
-              onClick={() => navigate('/ai-coach/settings')}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-            >
-              <Settings className="w-5 h-5 text-gray-600" />
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setShowAvatarSettings(!showAvatarSettings)}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                title="头像设置"
+              >
+                <Settings className="w-5 h-5 text-gray-600" />
+              </button>
+            </div>
           </div>
         </div>
+        
+        {showAvatarSettings && (
+          <div className="px-4 py-3 bg-gray-50 border-t">
+            <h3 className="text-sm font-medium text-gray-700 mb-3">自定义教练头像</h3>
+            <AvatarUpload
+              currentAvatar={coachAvatar}
+              onAvatarChange={handleAvatarChange}
+              className="mb-2"
+            />
+          </div>
+        )}
       </div>
 
       {/* 消息列表 */}
@@ -554,7 +474,23 @@ const AICoach: React.FC = () => {
               }`}>
                 {message.type === 'coach' && (
                   <div className="flex items-center gap-2 mb-2">
-                    <Sparkles className="w-4 h-4 text-purple-500" />
+                    <div className="w-8 h-8 bg-gradient-to-br from-purple-400 to-pink-400 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0 overflow-hidden">
+                      {coachAvatar ? (
+                        <img 
+                          src={coachAvatar} 
+                          alt={coachName}
+                          className="w-full h-full object-cover rounded-full"
+                          onError={(e) => {
+                            // 如果头像加载失败，显示首字母
+                            e.currentTarget.style.display = 'none';
+                            (e.currentTarget.nextElementSibling as HTMLElement)!.style.display = 'block';
+                          }}
+                        />
+                      ) : null}
+                      <span className={coachAvatar ? 'hidden' : 'block'}>
+                        {coachName.charAt(0)}
+                      </span>
+                    </div>
                     <span className="text-sm font-medium text-purple-600">{coachName}</span>
                   </div>
                 )}
@@ -621,7 +557,7 @@ const AICoach: React.FC = () => {
                 onChange={(e) => setInputText(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
                 placeholder="和教练聊聊吧..."
-                className="w-full px-4 py-3 border border-gray-300 rounded-full focus:ring-2 focus:ring-blue-500 focus:border-transparent pr-12"
+                className="w-full px-4 py-3 border-2 border-transparent bg-[#F3F3F3] rounded-full outline-none overflow-hidden transition-all duration-500 hover:border-[#4A9DEC] hover:shadow-[0px_0px_0px_7px_rgba(74,157,236,0.2)] hover:bg-white focus:border-[#4A9DEC] focus:shadow-[0px_0px_0px_7px_rgba(74,157,236,0.2)] focus:bg-white pr-12 text-black dark:text-black"
               />
               
               <button

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Phone, User, Scale, Ruler, Target, MessageSquare } from 'lucide-react';
 import { useAppStore } from '../store';
 import type { User as UserType } from '@/store';
+import '../styles/wave-animation.css';
 
 // 微信图标组件
 const WechatIcon: React.FC<{ className?: string }> = ({ className }) => (
@@ -138,19 +139,20 @@ const Auth: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-8">
+    <div className="min-h-screen flex items-center justify-center p-4 relative">
+      {/* 绿色雨滴动画背景 */}
+      <div className="rain-container"></div>
+      
+      <div className="w-full max-w-md p-8">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">健身契约</h1>
-          <p className="text-gray-600">用契约的力量，成就更好的自己</p>
+          <h1 className="text-3xl font-bold mb-2 text-white">健身契约</h1>
+          <p className="text-white">用契约的力量，成就更好的自己</p>
         </div>
 
         {step === 'phone' && (
           <form onSubmit={handlePhoneSubmit} className="space-y-6">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                手机号码
-              </label>
+              <label className="block text-sm font-medium text-white mb-2">手机号码</label>
               <div className="relative">
                 <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                 <input
@@ -166,9 +168,7 @@ const Auth: React.FC = () => {
             </div>
             
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                验证码
-              </label>
+              <label className="block text-sm font-medium text-white mb-2">验证码</label>
               <div className="flex gap-3">
                 <div className="relative flex-1">
                   <MessageSquare className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
@@ -207,7 +207,7 @@ const Auth: React.FC = () => {
                 <div className="w-full border-t border-gray-300"></div>
               </div>
               <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white text-gray-500">或</span>
+                <span className="px-2 text-white">或</span>
               </div>
             </div>
             
@@ -221,37 +221,40 @@ const Auth: React.FC = () => {
               微信登录
             </button>
             
-            {/* 开发环境快速登录 */}
-            {import.meta.env.DEV && (
-              <button
-                type="button"
-                onClick={() => {
-                  resetAllData();
-                  const testUser: UserType = {
-                    id: 'test-user-' + Date.now(),
-                    phone: '13800138000',
-                    nickname: '测试用户',
-                    age: 25,
-                    height: 170,
-                    weight: 65,
-                    fitnessGoal: 'lose_weight',
-                    createdAt: new Date()
-                  };
-                  setUser(testUser);
-                  navigate('/dashboard');
-                }}
-                className="w-full bg-purple-500 text-white py-3 rounded-lg font-medium hover:bg-purple-600 transition-colors"
-              >
-                🚀 快速登录 (开发模式)
-              </button>
-            )}
+            {/* 测试登录通道 */}
+            <button
+              type="button"
+              onClick={() => {
+                resetAllData();
+                const testUser: UserType = {
+                  id: 'test-user-' + Date.now(),
+                  phone: '13800138000',
+                  nickname: '测试用户',
+                  age: 25,
+                  height: 170,
+                  weight: 65,
+                  fitnessGoal: 'lose_weight',
+                  createdAt: new Date()
+                };
+                setUser(testUser);
+                navigate('/dashboard');
+              }}
+              className="w-full bg-orange-500 text-white py-3 rounded-lg font-medium hover:bg-orange-600 transition-colors flex items-center justify-center gap-2"
+            >
+              <User className="w-5 h-5" />
+              测试登录
+            </button>
+            
+            <div className="text-center mt-4">
+              <p className="text-xs text-white">测试登录无需验证，方便快速体验应用功能</p>
+            </div>
           </form>
         )}
 
         {step === 'profile' && (
           <form onSubmit={handleProfileSubmit} className="space-y-6">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-white mb-2">
                 昵称
               </label>
               <div className="relative">
@@ -269,7 +272,7 @@ const Auth: React.FC = () => {
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-white mb-2">
                   年龄
                 </label>
                 <input
@@ -285,7 +288,7 @@ const Auth: React.FC = () => {
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-white mb-2">
                   身高
                 </label>
                 <div className="relative">
@@ -305,7 +308,7 @@ const Auth: React.FC = () => {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-white mb-2">
                 体重
               </label>
               <div className="relative">
@@ -325,7 +328,7 @@ const Auth: React.FC = () => {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-white mb-2">
                 健身目标
               </label>
               <div className="grid grid-cols-2 gap-3">

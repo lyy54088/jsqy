@@ -28,7 +28,7 @@ const AICoachSettings: React.FC = () => {
   const [newTrait, setNewTrait] = useState('');
   
   // 教练名字和头像编辑状态
-  const [coachName, setCoachName] = useState('小美教练');
+  const [coachName, setCoachName] = useState(aiCoach?.name || '教练');
   const [coachAvatar, setCoachAvatar] = useState('');
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -54,9 +54,15 @@ const AICoachSettings: React.FC = () => {
     // 加载保存的教练名字和头像
     const savedCoachName = localStorage.getItem('coachName');
     const savedCoachAvatar = localStorage.getItem('coachAvatar');
+    
+    // 优先使用localStorage中保存的用户自定义名称
     if (savedCoachName) {
       setCoachName(savedCoachName);
+    } else if (aiCoach?.name) {
+      // 如果没有自定义名称，使用aiCoach对象中的名称
+      setCoachName(aiCoach.name);
     }
+    
     if (savedCoachAvatar) {
       setCoachAvatar(savedCoachAvatar);
     }

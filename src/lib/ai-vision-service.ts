@@ -46,7 +46,7 @@ function fileToBase64(file: File): Promise<string> {
       try {
         // 计算压缩后的尺寸，保持宽高比
         const maxSize = 1024; // 最大尺寸限制
-        const minSize = 50;   // 最小尺寸限制，确保符合API要求
+        const minSize = 100;  // 最小尺寸限制，确保符合通义千问API要求（至少10像素，建议100像素以上）
         let { width, height } = img;
         
         // 确保原始图片尺寸不为0
@@ -137,7 +137,21 @@ async function callBackendVisionAPI(imageDataUri: string, prompt: string): Promi
 
   if (!response.ok) {
     const errorText = await response.text();
-    throw new Error(`后端API调用失败: ${response.status} ${response.statusText} - ${errorText}`);
+    let errorMessage = `后端API调用失败: ${response.status} ${response.statusText}`;
+    
+    try {
+      const errorData = JSON.parse(errorText);
+      if (errorData.error) {
+        errorMessage = errorData.error;
+      }
+    } catch {
+      // 如果不是JSON格式，使用原始错误文本
+      if (errorText) {
+        errorMessage += ` - ${errorText}`;
+      }
+    }
+    
+    throw new Error(errorMessage);
   }
 
   return await response.json();
@@ -150,10 +164,12 @@ function parseAIResponse(apiResponse: any, checkInType: string): AIVisionResult 
   try {
     // 后端API返回格式: { success: boolean, data: { description: string } }
     if (!apiResponse.success || !apiResponse.data?.description) {
+      // 检查是否有错误信息
+      const errorMsg = apiResponse.error || apiResponse.message || '无法获取识别结果';
       return {
         recognized: false,
         confidence: 0,
-        description: 'AI识别失败：无法获取识别结果'
+        description: `AI识别失败：${errorMsg}`
       };
     }
     

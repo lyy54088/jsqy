@@ -20,7 +20,7 @@ export interface User {
 export interface AICoach {
   id: string;
   name: string;
-  personality: 'strict' | 'gentle' | 'humorous';
+  personality: 'loli' | 'queen' | 'mambo' | 'strict' | 'gentle';
   avatar: string;
   userId: string;
   // 自定义身份设置
@@ -39,10 +39,14 @@ export interface AICoach {
 // 训练计划接口
 export interface WorkoutPlan {
   planId: string;
+  planType?: 'default' | 'weekend' | 'custom'; // 计划类型：标准计划、周末计划或自定义计划
   intensity: string;
   goal: string;
   selectedDays: string[];
   weeklyWorkoutDays: number;
+  totalDays: number; // 总天数
+  customSelectedWeekdays?: string[]; // 自定义计划选择的星期
+  lastModified?: Date; // 上次修改时间，用于30天限制
 }
 
 // 契约接口
@@ -65,6 +69,8 @@ export interface Contract {
   violationPenalty: number; // 每次违约扣除金额（保证金的1/3）
   accumulatedPenalty: number; // 累计扣除的违约金
   remainderAmount: number; // 除不尽的余数，到期后返还
+  // 健身模式
+  fitnessMode: 'standard' | 'weekend'; // 健身模式：标准模式或周末模式
   // 训练计划
   workoutPlan?: WorkoutPlan; // 可选的训练计划
 }
