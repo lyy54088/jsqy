@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Send, Mic, MicOff, Volume2, VolumeX, Settings, Sparkles } from 'lucide-react';
 import { useAICoach, useUser, useCurrentContract, useTodayCheckIns, useCurrentChatSession, useAppStore } from '@/store';
-import { chatWithAICoach, generateWelcomeMessage, type CoachType } from '@/lib/ai-chat-service';
+import { chatWithAICoach, generateWelcomeMessage, type CoachType } from '../lib/ai-chat-service';
 import AvatarUpload from '@/components/AvatarUpload';
 
 // Web Speech API 类型定义

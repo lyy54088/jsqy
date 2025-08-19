@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Bot, Volume2, VolumeX, Bell, Sparkles } from 'lucide-react';
 import { useAppStore } from '@/store';
 import type { AICoach } from '@/store';
-import { COACH_PERSONALITIES } from '@/lib/ai-chat-service';
+import { COACH_PERSONALITIES } from '../lib/ai-chat-service';
 
 const AICoachSetup: React.FC = () => {
   const [selectedGoal, setSelectedGoal] = useState<'lose_weight' | 'build_muscle' | 'improve_fitness'>('build_muscle');

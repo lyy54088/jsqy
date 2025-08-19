@@ -196,18 +196,18 @@ const FoodAnalysis: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* 头部 */}
-      <div className="bg-white shadow-sm border-b">
+      <div className="bg-white dark:bg-gray-900 shadow-sm border-b border-gray-200 dark:border-gray-700">
         <div className="max-w-md mx-auto px-4 py-4">
           <div className="flex items-center gap-3">
             <button
               onClick={() => navigate(-1)}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
             >
-              <ArrowLeft className="w-5 h-5 text-gray-600" />
+              <ArrowLeft className="w-5 h-5 text-gray-600 dark:text-gray-400" />
             </button>
             <div className="flex items-center gap-2">
               <Camera className="w-6 h-6 text-blue-600" />
-              <h1 className="text-xl font-bold text-gray-900">食物记录</h1>
+              <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">食物记录</h1>
             </div>
           </div>
         </div>
@@ -215,8 +215,8 @@ const FoodAnalysis: React.FC = () => {
 
       <div className="max-w-md mx-auto px-4 py-6 space-y-6">
         {/* 餐食类型选择 */}
-        <div className="bg-white rounded-xl p-4 shadow-sm">
-          <h2 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
+        <div className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3 flex items-center gap-2">
             <Utensils className="w-5 h-5 text-blue-600" />
             选择打卡类型
           </h2>
@@ -227,8 +227,8 @@ const FoodAnalysis: React.FC = () => {
                 onClick={() => setMealType(type.value)}
                 className={`p-3 rounded-lg border-2 transition-colors text-center ${
                   mealType === type.value
-                    ? 'border-blue-500 bg-blue-50 text-blue-700'
-                    : 'border-gray-200 hover:border-gray-300'
+                    ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
+                    : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500 text-gray-900 dark:text-gray-100'
                 }`}
               >
                 <div className="text-2xl mb-1">{type.icon}</div>
@@ -243,8 +243,8 @@ const FoodAnalysis: React.FC = () => {
                 onClick={() => setMealType(type.value)}
                 className={`p-3 rounded-lg border-2 transition-colors text-center ${
                   mealType === type.value
-                    ? 'border-blue-500 bg-blue-50 text-blue-700'
-                    : 'border-gray-200 hover:border-gray-300'
+                    ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
+                    : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500 text-gray-900 dark:text-gray-100'
                 }`}
               >
                 <div className="text-2xl mb-1">{type.icon}</div>
@@ -258,8 +258,8 @@ const FoodAnalysis: React.FC = () => {
         </div>
 
         {/* 图片上传区域 */}
-        <div className="bg-white rounded-xl p-4 shadow-sm">
-          <h2 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
+        <div className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3 flex items-center gap-2">
             <Camera className="w-5 h-5 text-blue-600" />
             拍照上传
           </h2>
@@ -268,11 +268,11 @@ const FoodAnalysis: React.FC = () => {
             <div className="space-y-4">
               <div
                 onClick={() => (document.querySelector('input[type="file"]') as HTMLInputElement)?.click()}
-                className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-colors"
+                className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-8 text-center cursor-pointer hover:border-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
               >
-                <Upload className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-                <p className="text-gray-600 mb-2">点击上传食物图片</p>
-                <p className="text-sm text-gray-500">支持 JPG、PNG 格式</p>
+                <Upload className="w-12 h-12 text-gray-400 dark:text-gray-500 mx-auto mb-3" />
+                <p className="text-gray-600 dark:text-gray-300 mb-2">点击上传食物图片</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">支持 JPG、PNG 格式</p>
               </div>
               
               <div className="flex gap-3">
@@ -340,7 +340,7 @@ const FoodAnalysis: React.FC = () => {
                 {analysisResult && (
                   <button
                     onClick={handleReAnalyze}
-                    className="bg-gray-600 text-white py-3 px-4 rounded-lg hover:bg-gray-700 transition-colors flex items-center gap-2"
+                    className="bg-gray-600 dark:bg-gray-700 text-white py-3 px-4 rounded-lg hover:bg-gray-700 dark:hover:bg-gray-600 transition-colors flex items-center gap-2"
                   >
                     <RotateCcw className="w-5 h-5" />
                     重新分析
@@ -353,63 +353,63 @@ const FoodAnalysis: React.FC = () => {
 
         {/* 错误提示 */}
         {error && (
-          <div className="bg-red-50 border border-red-200 rounded-xl p-4">
-            <div className="flex items-center gap-2 text-red-800">
+          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-4">
+            <div className="flex items-center gap-2 text-red-800 dark:text-red-300">
               <AlertCircle className="w-5 h-5" />
               <span className="font-medium">分析失败</span>
             </div>
-            <p className="text-red-700 text-sm mt-1">{error}</p>
+            <p className="text-red-700 dark:text-red-400 text-sm mt-1">{error}</p>
           </div>
         )}
 
         {/* AI分析结果 */}
         {analysisResult && (
-          <div className="bg-white rounded-xl p-4 shadow-sm">
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm">
             <div className="flex items-center gap-2 mb-4">
               <CheckCircle className="w-6 h-6 text-green-600" />
-              <h2 className="text-lg font-semibold text-gray-900">分析结果</h2>
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">分析结果</h2>
             </div>
             
             {/* 食物名称和健康评分 */}
             <div className="mb-4">
               <div className="flex items-center justify-between mb-2">
-                <h3 className="text-xl font-bold text-gray-900">{analysisResult.foodName}</h3>
+                <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100">{analysisResult.foodName}</h3>
                 <div className={`px-3 py-1 rounded-full text-sm font-medium ${
-                  analysisResult.healthScore >= 80 ? 'bg-green-100 text-green-800' :
-                  analysisResult.healthScore >= 60 ? 'bg-yellow-100 text-yellow-800' :
-                  'bg-red-100 text-red-800'
+                  analysisResult.healthScore >= 80 ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300' :
+                  analysisResult.healthScore >= 60 ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300' :
+                  'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300'
                 }`}>
                   健康评分: {analysisResult.healthScore}
                 </div>
               </div>
-              <p className="text-gray-600 text-sm">{analysisResult.healthDescription}</p>
+              <p className="text-gray-600 dark:text-gray-300 text-sm">{analysisResult.healthDescription}</p>
             </div>
             
             {/* 营养信息 */}
             <div className="grid grid-cols-2 gap-4 mb-4">
-              <div className="bg-blue-50 rounded-lg p-3">
-                <div className="text-2xl font-bold text-blue-600">{analysisResult.nutrition.calories}</div>
-                <div className="text-sm text-blue-800">卡路里</div>
+              <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3">
+                <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">{analysisResult.nutrition.calories}</div>
+                <div className="text-sm text-blue-800 dark:text-blue-300">卡路里</div>
               </div>
-              <div className="bg-green-50 rounded-lg p-3">
-                <div className="text-2xl font-bold text-green-600">{analysisResult.nutrition.protein}g</div>
-                <div className="text-sm text-green-800">蛋白质</div>
+              <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-3">
+                <div className="text-2xl font-bold text-green-600 dark:text-green-400">{analysisResult.nutrition.protein}g</div>
+                <div className="text-sm text-green-800 dark:text-green-300">蛋白质</div>
               </div>
-              <div className="bg-orange-50 rounded-lg p-3">
-                <div className="text-2xl font-bold text-orange-600">{analysisResult.nutrition.carbs}g</div>
-                <div className="text-sm text-orange-800">碳水化合物</div>
+              <div className="bg-orange-50 dark:bg-orange-900/20 rounded-lg p-3">
+                <div className="text-2xl font-bold text-orange-600 dark:text-orange-400">{analysisResult.nutrition.carbs}g</div>
+                <div className="text-sm text-orange-800 dark:text-orange-300">碳水化合物</div>
               </div>
-              <div className="bg-purple-50 rounded-lg p-3">
-                <div className="text-2xl font-bold text-purple-600">{analysisResult.nutrition.fat}g</div>
-                <div className="text-sm text-purple-800">脂肪</div>
+              <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-3">
+                <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">{analysisResult.nutrition.fat}g</div>
+                <div className="text-sm text-purple-800 dark:text-purple-300">脂肪</div>
               </div>
             </div>
             
             {/* AI描述 */}
-            <div className="bg-gray-50 rounded-lg p-3 mb-4">
-              <h4 className="font-medium text-gray-900 mb-2">AI分析描述</h4>
-              <p className="text-gray-700 text-sm">{analysisResult.aiDescription}</p>
-              <div className="text-xs text-gray-500 mt-2">
+            <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 mb-4">
+              <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-2">AI分析描述</h4>
+              <p className="text-gray-700 dark:text-gray-300 text-sm">{analysisResult.aiDescription}</p>
+              <div className="text-xs text-gray-500 dark:text-gray-400 mt-2">
                 识别置信度: {Math.round(analysisResult.confidence * 100)}%
               </div>
             </div>
@@ -429,12 +429,12 @@ const FoodAnalysis: React.FC = () => {
         )}
 
         {/* 使用说明 */}
-        <div className="bg-blue-50 rounded-xl p-4">
-          <h3 className="text-sm font-medium text-blue-900 mb-2 flex items-center gap-2">
+        <div className="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-4">
+          <h3 className="text-sm font-medium text-blue-900 dark:text-blue-300 mb-2 flex items-center gap-2">
             <Info className="w-4 h-4" />
             使用说明
           </h3>
-          <ul className="text-xs text-blue-700 space-y-1">
+          <ul className="text-xs text-blue-700 dark:text-blue-300 space-y-1">
             <li>• 选择对应的打卡类型</li>
             <li>• 拍照或上传清晰的食物图片</li>
             <li>• 点击"开始AI分析"获取营养信息</li>

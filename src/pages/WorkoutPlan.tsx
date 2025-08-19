@@ -27,12 +27,12 @@ const exerciseVideos: Record<string, { title: string; url: string }> = {
     url: 'https://www.bilibili.com/video/BV1Nt421Q7Qs/?share_source=copy_web&vd_source=87eb31e4d5c43acdfaec8e9760084699'
   },
   '杠铃划船': {
-    title: '杠铃划船教学视频',
-    url: 'https://www.bilibili.com/video/BV1Nt421Q7Qs/?share_source=copy_web&vd_source=87eb31e4d5c43acdfaec8e9760084699'
+    title: '杠铃划船标准动作教学 | 练背必备动作',
+    url: 'https://www.bilibili.com/video/BV1aV4y1P7mK/?share_source=copy_web&vd_source=87eb31e4d5c43acdfaec8e9760084699'
   },
   '坐姿肩推': {
-    title: '坐姿肩推教学视频',
-    url: 'https://www.bilibili.com/video/BV1Nt421Q7Qs/?share_source=copy_web&vd_source=87eb31e4d5c43acdfaec8e9760084699'
+    title: '坐姿肩推标准动作教学 | 练肩必备',
+    url: 'https://www.bilibili.com/video/BV1YP4y1b7Qg/?share_source=copy_web&vd_source=87eb31e4d5c43acdfaec8e9760084699'
   }
 };
 

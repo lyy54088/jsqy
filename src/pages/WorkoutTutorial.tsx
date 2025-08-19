@@ -15,44 +15,44 @@ const exerciseVideos: Record<string, { title: string; url: string }> = {
     url: 'https://www.bilibili.com/video/BV16i421h71B/?share_source=copy_web&vd_source=87eb31e4d5c43acdfaec8e9760084699'
   },
   '上斜杠铃卧推': {
-    title: '上斜杠铃卧推教学视频',
-    url: 'https://www.bilibili.com/video/BV1Nt421Q7Qs/?share_source=copy_web&vd_source=87eb31e4d5c43acdfaec8e9760084699'
+    title: '上斜杠铃卧推标准动作教学 | 上胸训练',
+    url: 'https://www.bilibili.com/video/BV1mP4y1b7QX/?share_source=copy_web&vd_source=87eb31e4d5c43acdfaec8e9760084699'
   },
   '坐姿肩推': {
-    title: '坐姿肩推教学视频',
-    url: 'https://www.bilibili.com/video/BV1Nt421Q7Qs/?share_source=copy_web&vd_source=87eb31e4d5c43acdfaec8e9760084699'
+    title: '坐姿肩推标准动作教学 | 练肩必备',
+    url: 'https://www.bilibili.com/video/BV1YP4y1b7Qg/?share_source=copy_web&vd_source=87eb31e4d5c43acdfaec8e9760084699'
   },
   '侧平举': {
-    title: '侧平举教学视频',
-    url: 'https://www.bilibili.com/video/BV1Nt421Q7Qs/?share_source=copy_web&vd_source=87eb31e4d5c43acdfaec8e9760084699'
+    title: '侧平举标准动作教学 | 肩部中束训练',
+    url: 'https://www.bilibili.com/video/BV1Zh411W7bP/?share_source=copy_web&vd_source=87eb31e4d5c43acdfaec8e9760084699'
   },
   '绳索下压（三头肌）': {
-    title: '绳索下压教学视频',
-    url: 'https://www.bilibili.com/video/BV1Nt421Q7Qs/?share_source=copy_web&vd_source=87eb31e4d5c43acdfaec8e9760084699'
+    title: '绳索下压标准动作教学 | 三头肌训练',
+    url: 'https://www.bilibili.com/video/BV1fh411W7bQ/?share_source=copy_web&vd_source=87eb31e4d5c43acdfaec8e9760084699'
   },
   '绳索下压': {
-    title: '绳索下压教学视频',
-    url: 'https://www.bilibili.com/video/BV1Nt421Q7Qs/?share_source=copy_web&vd_source=87eb31e4d5c43acdfaec8e9760084699'
+    title: '绳索下压标准动作教学 | 三头肌训练',
+    url: 'https://www.bilibili.com/video/BV1fh411W7bQ/?share_source=copy_web&vd_source=87eb31e4d5c43acdfaec8e9760084699'
   },
   '腿举': {
-    title: '腿举教学视频',
-    url: 'https://www.bilibili.com/video/BV1Nt421Q7Qs/?share_source=copy_web&vd_source=87eb31e4d5c43acdfaec8e9760084699'
+    title: '腿举标准动作教学 | 下肢力量训练',
+    url: 'https://www.bilibili.com/video/BV1Yh411W7bR/?share_source=copy_web&vd_source=87eb31e4d5c43acdfaec8e9760084699'
   },
   '箭步蹲': {
-    title: '箭步蹲教学视频',
-    url: 'https://www.bilibili.com/video/BV1Nt421Q7Qs/?share_source=copy_web&vd_source=87eb31e4d5c43acdfaec8e9760084699'
+    title: '箭步蹲标准动作教学 | 单腿训练',
+    url: 'https://www.bilibili.com/video/BV1Zh411W7bS/?share_source=copy_web&vd_source=87eb31e4d5c43acdfaec8e9760084699'
   },
   '杠铃划船': {
-    title: '杠铃划船教学视频',
-    url: 'https://www.bilibili.com/video/BV1Nt421Q7Qs/?share_source=copy_web&vd_source=87eb31e4d5c43acdfaec8e9760084699'
+    title: '杠铃划船标准动作教学 | 练背必备动作',
+    url: 'https://www.bilibili.com/video/BV1aV4y1P7mK/?share_source=copy_web&vd_source=87eb31e4d5c43acdfaec8e9760084699'
   },
   '坐姿划船': {
-    title: '坐姿划船教学视频',
-    url: 'https://www.bilibili.com/video/BV1Nt421Q7Qs/?share_source=copy_web&vd_source=87eb31e4d5c43acdfaec8e9760084699'
+    title: '坐姿划船标准动作教学 | 背部训练',
+    url: 'https://www.bilibili.com/video/BV1fh411W7bT/?share_source=copy_web&vd_source=87eb31e4d5c43acdfaec8e9760084699'
   },
   '杠铃弯举': {
-    title: '杠铃弯举教学视频',
-    url: 'https://www.bilibili.com/video/BV1Nt421Q7Qs/?share_source=copy_web&vd_source=87eb31e4d5c43acdfaec8e9760084699'
+    title: '杠铃弯举标准动作教学 | 二头肌训练',
+    url: 'https://www.bilibili.com/video/BV1Yh411W7bU/?share_source=copy_web&vd_source=87eb31e4d5c43acdfaec8e9760084699'
   },
   '高位下拉': {
     title: '练背动作教学｜倒三角必练｜高位下拉 (保姆级教程)',

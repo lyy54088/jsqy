@@ -520,6 +520,7 @@ export const useAppStore = create<AppState>()(persist(
       currentContract: state.currentContract,
       contractHistory: state.contractHistory,
       checkInHistory: state.checkInHistory,
+      todayCheckIns: state.todayCheckIns, // 添加今日打卡记录到持久化配置
       currentChatSession: state.currentChatSession,
       chatHistory: state.chatHistory,
       notificationSettings: state.notificationSettings,

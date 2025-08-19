@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MessageCircle, Trophy, Target, AlertCircle, CreditCard, Camera, Calendar, Users, Settings, Dumbbell, Download, Moon, Sun } from 'lucide-react';
+import { MessageCircle, Trophy, Target, AlertCircle, CreditCard, Camera, Calendar, Users, Settings, Dumbbell, Download, Moon, Sun, Utensils } from 'lucide-react';
 import UIverseButton from '../components/UIverseButton';
 import { useUser, useCurrentContract, useTodayCheckIns, useAppStore, useAICoach } from '@/store';
 import { DataCleaner } from '@/utils/data-cleaner';
 import { DevTools } from '@/utils/dev-tools';
 import { defaultWeeklyPlan } from '../data/workoutPlans';
+import { useTheme } from '@/hooks/useTheme';
 
 const Dashboard: React.FC = () => {
   const navigate = useNavigate();
@@ -15,7 +16,7 @@ const Dashboard: React.FC = () => {
   const aiCoach = useAICoach();
   const { resetAllData } = useAppStore();
   const [coachName, setCoachName] = useState('小美教练');
-  const [isDarkMode, setIsDarkMode] = useState(false);
+  const { theme, toggleTheme, isDark: isDarkMode } = useTheme();
 
   // 检查是否有无效的契约数据（没有用户但有契约）
   useEffect(() => {
@@ -105,10 +106,7 @@ const Dashboard: React.FC = () => {
                 <Download className="w-5 h-5 text-green-600" />
               </button>
               <button 
-                onClick={() => {
-                  setIsDarkMode(!isDarkMode);
-                  document.documentElement.classList.toggle('dark', !isDarkMode);
-                }}
+                onClick={toggleTheme}
                 className={`p-2 rounded-full transition-colors ${
                   isDarkMode 
                     ? 'bg-yellow-100 hover:bg-yellow-200' 
@@ -464,19 +462,19 @@ const Dashboard: React.FC = () => {
 
         {/* AI教练消息 */}
         {aiCoach && (
-          <div className="bg-gradient-to-r from-purple-100 to-pink-100 rounded-2xl p-6 border border-purple-200">
+          <div className="bg-gradient-to-r from-purple-100 to-pink-100 dark:from-purple-900/30 dark:to-pink-900/30 rounded-2xl p-6 border border-purple-200 dark:border-purple-700">
             <div className="flex items-start gap-3">
               <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-white font-medium">
                 AI
               </div>
               <div className="flex-1">
                 <div className="flex items-center gap-2 mb-2">
-                  <h4 className="font-semibold text-gray-900">{coachName}</h4>
-                  <span className="text-xs bg-purple-200 text-purple-700 px-2 py-1 rounded-full">
+                  <h4 className="font-semibold text-gray-900 dark:text-gray-100">{coachName}</h4>
+                  <span className="text-xs bg-purple-200 dark:bg-purple-800 text-purple-700 dark:text-purple-200 px-2 py-1 rounded-full">
                     {aiCoach.personality === 'strict' ? '严格型' : aiCoach.personality === 'gentle' ? '温和型' : '幽默型'}
                   </span>
                 </div>
-                <p className="text-gray-700 text-sm leading-relaxed">
+                <p className="text-gray-700 dark:text-gray-300 text-sm leading-relaxed">
                   {progressPercentage === 100 
                     ? "太棒了！今天的打卡任务全部完成，继续保持这个节奏！" 
                     : progressPercentage >= 60 
@@ -486,7 +484,7 @@ const Dashboard: React.FC = () => {
                 </p>
                 <button 
                   onClick={() => navigate('/ai-coach')}
-                  className="mt-2 text-purple-600 text-sm font-medium hover:text-purple-700"
+                  className="mt-2 text-purple-600 dark:text-purple-400 text-sm font-medium hover:text-purple-700 dark:hover:text-purple-300"
                 >与教练对话 →</button>
               </div>
             </div>
@@ -494,7 +492,7 @@ const Dashboard: React.FC = () => {
         )}
 
         {/* 快捷功能 */}
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           <button 
             onClick={() => {
               console.log('🔥 历史记录按钮被点击');
@@ -507,11 +505,11 @@ const Dashboard: React.FC = () => {
               console.log('🚀 导航到 /history');
               navigate('/history');
             }}
-            className="bg-white rounded-xl p-4 border border-gray-200 hover:border-gray-300 transition-colors"
+            className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition-colors"
           >
             <Calendar className="w-6 h-6 text-blue-600 mb-2" />
-            <p className="text-sm font-medium text-gray-900">历史记录</p>
-            <p className="text-xs text-gray-600">查看打卡历史</p>
+            <p className="text-sm font-medium text-gray-900 dark:text-gray-100">历史记录</p>
+            <p className="text-xs text-gray-600 dark:text-gray-400">查看打卡历史</p>
           </button>
           
           <button 
@@ -526,11 +524,11 @@ const Dashboard: React.FC = () => {
               console.log('🚀 导航到 /community');
               navigate('/community');
             }}
-            className="bg-white rounded-xl p-4 border border-gray-200 hover:border-gray-300 transition-colors"
+            className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition-colors"
           >
             <Users className="w-6 h-6 text-orange-600 mb-2" />
-            <p className="text-sm font-medium text-gray-900">健身社群</p>
-            <p className="text-xs text-gray-600">加入附近社群</p>
+            <p className="text-sm font-medium text-gray-900 dark:text-gray-100">健身社群</p>
+            <p className="text-xs text-gray-600 dark:text-gray-400">加入附近社群</p>
           </button>
           
           <button 
@@ -545,11 +543,30 @@ const Dashboard: React.FC = () => {
               console.log('🚀 导航到 /profile');
               navigate('/profile');
             }}
-            className="bg-white rounded-xl p-4 border border-gray-200 hover:border-gray-300 transition-colors"
+            className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition-colors"
           >
             <Target className="w-6 h-6 text-green-600 mb-2" />
-            <p className="text-sm font-medium text-gray-900">个人中心</p>
-            <p className="text-xs text-gray-600">设置与统计</p>
+            <p className="text-sm font-medium text-gray-900 dark:text-gray-100">个人中心</p>
+            <p className="text-xs text-gray-600 dark:text-gray-400">设置与统计</p>
+          </button>
+          
+          <button 
+            onClick={() => {
+              console.log('🔥 食物识别按钮被点击');
+              console.log('🔥 用户状态:', user);
+              if (!user) {
+                console.error('❌ 用户未登录');
+                alert('请先登录');
+                return;
+              }
+              console.log('🚀 导航到 /food-analysis');
+              navigate('/food-analysis');
+            }}
+            className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition-colors"
+          >
+            <Utensils className="w-6 h-6 text-purple-600 mb-2" />
+            <p className="text-sm font-medium text-gray-900 dark:text-gray-100">食物识别</p>
+            <p className="text-xs text-gray-600 dark:text-gray-400">AI营养分析</p>
           </button>
         </div>
       </div>
